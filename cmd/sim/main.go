@@ -20,6 +20,7 @@ type Game struct {
 	Plot        *image.RGBA
 	Buffers     Buffers
 	ForceRender bool
+	Options     inputs.Options
 }
 
 type Buffers struct {
@@ -44,6 +45,7 @@ func plotToBuffer(g *Game) {
 func (g *Game) Update(screen *ebiten.Image) error {
 
 	inputs.HandleCamera(g.Screen)
+	g.ForceRender = inputs.HandlePlot(&g.Options) || g.ForceRender
 
 	g.Screen.AutoYAxis(g.Model.Quotes)
 
@@ -56,14 +58,20 @@ func (g *Game) Update(screen *ebiten.Image) error {
 
 		g.Buffers.Plot.Fill(color.RGBA{19, 15, 64, 255})
 
-		plots.RSI(20, g.Model.Quotes, g.Plot, g.Screen)
-		plotToBuffer(g)
+		if g.Options.ShowRSI {
+			plots.RSI(20, g.Model.Quotes, g.Plot, g.Screen)
+			plotToBuffer(g)
+		}
 
-		plots.Bollinger(20, g.Model.Quotes, g.Plot, g.Screen)
-		plotToBuffer(g)
+		if g.Options.ShowBollinger {
+			plots.Bollinger(20, g.Model.Quotes, g.Plot, g.Screen)
+			plotToBuffer(g)
+		}
 
-		plots.Candles(g.Model.Quotes, g.Plot, g.Screen)
-		plotToBuffer(g)
+		if g.Options.ShowQuotes {
+			plots.Candles(g.Model.Quotes, g.Plot, g.Screen)
+			plotToBuffer(g)
+		}
 	}
 
 	debug := fmt.Sprintf("%d", int(ebiten.CurrentFPS()))
@@ -145,6 +153,11 @@ func main() {
 			Plot:    bufferPlot,
 			Tooltip: tooltipPlot,
 			Cursor:  bufferCursor,
+		},
+		Options: inputs.Options{
+			ShowBollinger: true,
+			ShowRSI:       true,
+			ShowQuotes:    true,
 		},
 		ForceRender: true,
 	}

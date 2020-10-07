@@ -22,7 +22,7 @@ func Bollinger(n int, quotes []stocks.Quote, plot *image.RGBA, screen *view.Scre
 		std := indicators.StandardDeviation(quotes[x-n : x])
 		sma := indicators.SimpleMeanAverage(quotes[x-n : x])
 
-		y := (sma - screen.Camera.Bottom) * screen.Camera.ScaleY
+		//y := (sma - screen.Camera.Bottom) * screen.Camera.ScaleY
 		ub := (sma + 2*std - screen.Camera.Bottom) * screen.Camera.ScaleY
 		lb := (sma - 2*std - screen.Camera.Bottom) * screen.Camera.ScaleY
 
@@ -42,7 +42,7 @@ func Bollinger(n int, quotes []stocks.Quote, plot *image.RGBA, screen *view.Scre
 			}
 		}
 
-		plot.Set((x-screen.Camera.X)*3+1, int(y), color.RGBA{126, 214, 223, 255})
+		//plot.Set((x-screen.Camera.X)*3+1, int(y), color.RGBA{126, 214, 223, 255})
 	}
 
 }
