@@ -6,7 +6,6 @@ import (
 	"image"
 	"image/color"
 	"log"
-	"visim.muon.one/internal/indicators"
 	"visim.muon.one/internal/inputs"
 	"visim.muon.one/internal/plots"
 	"visim.muon.one/internal/stocks"
@@ -24,9 +23,10 @@ type Game struct {
 }
 
 type Buffers struct {
-	Draw   *ebiten.Image
-	Plot   *ebiten.Image
-	Cursor *ebiten.Image
+	Draw    *ebiten.Image
+	Plot    *ebiten.Image
+	Cursor  *ebiten.Image
+	Tooltip *ebiten.Image
 }
 
 func clearPlot(plot *image.RGBA) {
@@ -47,6 +47,9 @@ func (g *Game) Update(screen *ebiten.Image) error {
 
 	g.Screen.AutoYAxis(g.History)
 
+	// clear existing buffers
+	g.Buffers.Tooltip.Clear()
+
 	// only update plot if moved, reduces cpu usage
 	if g.Screen.HasMoved || g.ForceRender {
 		g.ForceRender = false
@@ -62,29 +65,34 @@ func (g *Game) Update(screen *ebiten.Image) error {
 		plots.Candles(g.History, g.Plot, g.Screen)
 		plotToBuffer(g)
 	}
+
+	debug := fmt.Sprintf("%d", int(ebiten.CurrentFPS()))
+
+	quoteIndex := g.Screen.Camera.X + g.Screen.Cursor.X/3
+	if quoteIndex > 0 && quoteIndex < len(g.History) {
+		plots.TooltipCandle(quoteIndex, g.History, g.Buffers.Tooltip, g.Screen)
+		if quoteIndex > 20 {
+			plots.TooltipRSI(quoteIndex, 20, g.History, g.Buffers.Tooltip, g.Screen)
+		}
+	}
+
+	// draw plot
 	op := ebiten.DrawImageOptions{}
 	op.GeoM.Scale(1, -1)
 	op.GeoM.Translate(0, float64(g.Screen.Window.H))
 	screen.DrawImage(g.Buffers.Plot, &op)
 
-	debug := fmt.Sprintf("%d,%d\n%d\n", g.Screen.Camera.X, g.Screen.Camera.Y, int(ebiten.CurrentFPS()))
-	debug += fmt.Sprintf("%d,%d\n", g.Screen.Cursor.X, g.Screen.Cursor.Y)
-
-	quoteIndex := g.Screen.Camera.X + g.Screen.Cursor.X/3
-	quoteDebug := "no quote"
-	if quoteIndex > 0 && quoteIndex < len(g.History) {
-		quote := g.History[quoteIndex]
-		mean := 0.0
-		if quoteIndex > 20 {
-			mean = indicators.SimpleMeanAverage(g.History[quoteIndex-20 : quoteIndex])
-		}
-		quoteDebug = fmt.Sprintf("%d: %d\n%f %f %f %f %d\n%f\n", quoteIndex, quote.Time, quote.Open, quote.High, quote.Low, quote.Close, quote.Volume, mean)
+	// draw tooltip buffer
+	if !ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+		screen.DrawImage(g.Buffers.Tooltip, nil)
 	}
+
+	// draw cursor buffer
 	op = ebiten.DrawImageOptions{}
 	op.GeoM.Translate(float64(g.Screen.Cursor.X), 0)
 	screen.DrawImage(g.Buffers.Cursor, &op)
 
-	ebitenutil.DebugPrint(screen, debug+quoteDebug)
+	ebitenutil.DebugPrint(screen, debug)
 	return nil
 }
 
@@ -106,6 +114,8 @@ func main() {
 	handleFatal(err)
 	bufferPlot, err := ebiten.NewImage(w, h, ebiten.FilterDefault)
 	handleFatal(err)
+	tooltipPlot, err := ebiten.NewImage(w, h, ebiten.FilterDefault)
+	handleFatal(err)
 	bufferCursor, err := ebiten.NewImage(1, h, ebiten.FilterDefault)
 	handleFatal(err)
 	bufferCursor.Fill(color.RGBA{104, 109, 224, 150})
@@ -120,9 +130,10 @@ func main() {
 			Max: image.Point{w, h},
 		}),
 		Buffers: Buffers{
-			Draw:   bufferDraw,
-			Plot:   bufferPlot,
-			Cursor: bufferCursor,
+			Draw:    bufferDraw,
+			Plot:    bufferPlot,
+			Tooltip: tooltipPlot,
+			Cursor:  bufferCursor,
 		},
 		ForceRender: true,
 	}

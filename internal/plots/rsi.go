@@ -1,12 +1,24 @@
 package plots
 
 import (
+	"fmt"
+	"github.com/hajimehoshi/ebiten"
+	"github.com/hajimehoshi/ebiten/text"
 	"image"
 	"image/color"
+	"visim.muon.one/internal/fonts"
 	"visim.muon.one/internal/indicators"
 	"visim.muon.one/internal/stocks"
 	"visim.muon.one/internal/view"
 )
+
+func TooltipRSI(i int, n int, quotes []stocks.Quote, buffer *ebiten.Image, screen *view.Screen) {
+	rsi := indicators.RelativeStrengthIndex(quotes[i-n : i])
+	y := screen.Window.H - int(rsi*100)
+	x := (i-screen.Camera.X)*3 + paddingLeft
+	fonts.Background(x-3, y+3, 54, 13, color.RGBA{48, 51, 107, 200}, buffer)
+	text.Draw(buffer, fmt.Sprintf("RSI: %d", int(rsi*100)), fonts.FaceNormal, x, y, color.White)
+}
 
 func RSI(n int, quotes []stocks.Quote, plot *image.RGBA, screen *view.Screen) {
 
