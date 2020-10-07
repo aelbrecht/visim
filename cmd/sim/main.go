@@ -15,7 +15,7 @@ import (
 )
 
 type Game struct {
-	Model       stocks.History
+	Model       stocks.Model
 	Screen      *view.Screen
 	Plot        *image.RGBA
 	Buffers     Buffers
@@ -127,7 +127,7 @@ func main() {
 	handleFatal(err)
 
 	game := Game{
-		Model: stocks.History{
+		Model: stocks.Model{
 			Quotes: data,
 			Bot: stocks.Bot{
 				Cursor: 0,

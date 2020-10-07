@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-type History struct {
+type Model struct {
 	Quotes []Quote
 	Bot    Bot
 }
