@@ -7,22 +7,22 @@ import (
 
 var lastX = 0
 var lastY = 0
-var moving = false
 
 func HandleCamera(s *view.Screen) {
 	x, y := ebiten.CursorPosition()
 	dx, dy := lastX-x, lastY-y
 
-	if moving {
-		s.Camera.X += dx/3
+	if s.HasMoved {
+		s.Camera.X += dx / 3
 		s.Camera.Y += dy
 	}
 
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
-		moving = true
+		s.HasMoved = true
 	} else {
-		moving = false
+		s.HasMoved = false
 	}
 
 	lastX, lastY = x, y
+	s.Cursor = view.CursorPos{X: x, Y: y}
 }
