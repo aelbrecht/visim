@@ -31,14 +31,14 @@ func RSI(n int, quotes []stocks.Quote, plot *image.RGBA, screen *view.Screen) {
 
 		rsi := indicators.RelativeStrengthIndex(quotes[x-n : x])
 
-		buy := math.Max(rsi-0.65, 0) / 0.35
-		sell := math.Max(1-rsi-0.65, 0) / 0.35
+		sell := math.Max(rsi-0.65, 0) / 0.35
+		buy := math.Max(1-rsi-0.65, 0) / 0.35
 
 		c := color.RGBA{
-			R: 48 + uint8((235-48)*buy) + uint8((106-48)*sell),
-			G: 51 + uint8((77-51)*buy) + uint8((176-51)*sell),
-			B: 107 + uint8((75-107)*buy) + uint8((76-107)*sell),
-			A: 150,
+			R: 48 + uint8((235-48)*sell) + uint8((106-48)*buy),
+			G: 51 + uint8((77-51)*sell) + uint8((176-51)*buy),
+			B: 107 + uint8((75-107)*sell) + uint8((76-107)*buy),
+			A: 255,
 		}
 
 		y := rsi * 100

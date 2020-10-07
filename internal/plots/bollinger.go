@@ -3,6 +3,7 @@ package plots
 import (
 	"image"
 	"image/color"
+	"math"
 	"visim.muon.one/internal/indicators"
 	"visim.muon.one/internal/stocks"
 	"visim.muon.one/internal/view"
@@ -16,6 +17,8 @@ func Bollinger(n int, quotes []stocks.Quote, plot *image.RGBA, screen *view.Scre
 			continue
 		}
 
+		q := quotes[x]
+
 		std := indicators.StandardDeviation(quotes[x-n : x])
 		sma := indicators.SimpleMeanAverage(quotes[x-n : x])
 
@@ -23,9 +26,19 @@ func Bollinger(n int, quotes []stocks.Quote, plot *image.RGBA, screen *view.Scre
 		ub := (sma + 2*std - screen.Camera.Bottom) * screen.Camera.ScaleY
 		lb := (sma - 2*std - screen.Camera.Bottom) * screen.Camera.ScaleY
 
+		buy := math.Min(math.Max(q.Close-(sma+std), 0)/(2*std), 1)
+		sell := math.Min(math.Max((sma-std)-q.Close, 0)/(2*std), 1)
+
+		c := color.RGBA{
+			R: 48 + uint8((235-48)*buy) + uint8((106-48)*sell),
+			G: 51 + uint8((77-51)*buy) + uint8((176-51)*sell),
+			B: 107 + uint8((75-107)*buy) + uint8((76-107)*sell),
+			A: 255,
+		}
+
 		for i := lb; i < ub; i++ {
 			for j := 0; j < 3; j++ {
-				plot.Set((x-screen.Camera.X)*3+j, int(i), color.RGBA{34, 166, 179, 40})
+				plot.Set((x-screen.Camera.X)*3+j, int(i), c)
 			}
 		}
 
