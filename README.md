@@ -4,12 +4,17 @@ The goal of using Go and a game engine is to be able to plot data to textures an
 
 ## Environment
 
-Wip
+```
+API_URL=https://localhost:5000 # url to market data
+```
 
 ## Usage
 
-Wip
+```
+go run ./cmd/sim
+```
 
 ## Indicators
 
-Wip
+- bollinger band
+- relative strength index
