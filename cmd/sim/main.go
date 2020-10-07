@@ -15,7 +15,7 @@ import (
 )
 
 type Game struct {
-	History     []stocks.Quote
+	Model       stocks.History
 	Screen      *view.Screen
 	Plot        *image.RGBA
 	Buffers     Buffers
@@ -45,7 +45,7 @@ func (g *Game) Update(screen *ebiten.Image) error {
 
 	inputs.HandleCamera(g.Screen)
 
-	g.Screen.AutoYAxis(g.History)
+	g.Screen.AutoYAxis(g.Model.Quotes)
 
 	// clear existing buffers
 	g.Buffers.Tooltip.Clear()
@@ -56,23 +56,23 @@ func (g *Game) Update(screen *ebiten.Image) error {
 
 		g.Buffers.Plot.Fill(color.RGBA{19, 15, 64, 255})
 
-		plots.RSI(20, g.History, g.Plot, g.Screen)
+		plots.RSI(20, g.Model.Quotes, g.Plot, g.Screen)
 		plotToBuffer(g)
 
-		plots.Bollinger(20, g.History, g.Plot, g.Screen)
+		plots.Bollinger(20, g.Model.Quotes, g.Plot, g.Screen)
 		plotToBuffer(g)
 
-		plots.Candles(g.History, g.Plot, g.Screen)
+		plots.Candles(g.Model.Quotes, g.Plot, g.Screen)
 		plotToBuffer(g)
 	}
 
 	debug := fmt.Sprintf("%d", int(ebiten.CurrentFPS()))
 
 	quoteIndex := g.Screen.Camera.X + g.Screen.Cursor.X/3
-	if quoteIndex > 0 && quoteIndex < len(g.History) {
-		plots.TooltipCandle(quoteIndex, g.History, g.Buffers.Tooltip, g.Screen)
+	if quoteIndex > 0 && quoteIndex < len(g.Model.Quotes) {
+		plots.TooltipCandle(quoteIndex, g.Model.Quotes, g.Buffers.Tooltip, g.Screen)
 		if quoteIndex > 20 {
-			plots.TooltipRSI(quoteIndex, 20, g.History, g.Buffers.Tooltip, g.Screen)
+			plots.TooltipRSI(quoteIndex, 20, g.Model.Quotes, g.Buffers.Tooltip, g.Screen)
 		}
 	}
 
@@ -90,6 +90,13 @@ func (g *Game) Update(screen *ebiten.Image) error {
 	// draw cursor buffer
 	op = ebiten.DrawImageOptions{}
 	op.GeoM.Translate(float64(g.Screen.Cursor.X), 0)
+	g.Buffers.Cursor.Fill(color.RGBA{104, 109, 224, 150})
+	screen.DrawImage(g.Buffers.Cursor, &op)
+
+	// draw bot cursor
+	op = ebiten.DrawImageOptions{}
+	op.GeoM.Translate(float64((g.Model.Bot.Cursor-g.Screen.Camera.X)*3)+1, 0)
+	g.Buffers.Cursor.Fill(color.RGBA{246, 229, 141, 150})
 	screen.DrawImage(g.Buffers.Cursor, &op)
 
 	ebitenutil.DebugPrint(screen, debug)
@@ -118,10 +125,14 @@ func main() {
 	handleFatal(err)
 	bufferCursor, err := ebiten.NewImage(1, h, ebiten.FilterDefault)
 	handleFatal(err)
-	bufferCursor.Fill(color.RGBA{104, 109, 224, 150})
 
 	game := Game{
-		History: data,
+		Model: stocks.History{
+			Quotes: data,
+			Bot: stocks.Bot{
+				Cursor: 0,
+			},
+		},
 		Screen: &view.Screen{
 			Camera: &view.Camera{},
 			Window: view.Window{w, h},

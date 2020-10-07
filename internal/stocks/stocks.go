@@ -10,6 +10,15 @@ import (
 	"strings"
 )
 
+type History struct {
+	Quotes []Quote
+	Bot    Bot
+}
+
+type Bot struct {
+	Cursor int
+}
+
 type Quote struct {
 	Time   int64
 	Open   float64

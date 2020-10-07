@@ -24,9 +24,9 @@ func Bollinger(n int, quotes []stocks.Quote, plot *image.RGBA, screen *view.Scre
 		lb := (sma - 2*std - screen.Camera.Bottom) * screen.Camera.ScaleY
 
 		for i := lb; i < ub; i++ {
-			plot.Set((x-screen.Camera.X)*3-1, int(i), color.RGBA{34, 166, 179, 40})
-			plot.Set((x-screen.Camera.X)*3, int(i), color.RGBA{34, 166, 179, 40})
-			plot.Set((x-screen.Camera.X)*3+1, int(i), color.RGBA{34, 166, 179, 40})
+			for j := 0; j < 3; j++ {
+				plot.Set((x-screen.Camera.X)*3+j, int(i), color.RGBA{34, 166, 179, 40})
+			}
 		}
 
 		plot.Set((x-screen.Camera.X)*3+1, int(y), color.RGBA{126, 214, 223, 255})

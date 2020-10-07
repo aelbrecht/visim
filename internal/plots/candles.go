@@ -34,12 +34,22 @@ func Candles(quotes []stocks.Quote, plot *image.RGBA, screen *view.Screen) {
 
 		lb := int((q.Low - screen.Camera.Bottom) * screen.Camera.ScaleY)
 		ub := int((q.High - screen.Camera.Bottom) * screen.Camera.ScaleY)
+		yo := int((q.Open - screen.Camera.Bottom) * screen.Camera.ScaleY)
+		yc := int((q.Close - screen.Camera.Bottom) * screen.Camera.ScaleY)
 
 		c := color.RGBA{235, 77, 75, 255}
-		if q.Open <= q.Close {
+		if q.Open < q.Close {
 			c = color.RGBA{106, 176, 76, 255}
+		} else if q.Open == q.Close {
+			c = color.RGBA{249, 202, 36, 255}
 		}
 
+		for j := 0; j < 2; j++ {
+			plot.Set((x-screen.Camera.X)*3+j, yo, c)
+		}
+		for j := 1; j < 3; j++ {
+			plot.Set((x-screen.Camera.X)*3+j, yc, c)
+		}
 		for y := lb; y < ub; y++ {
 			plot.Set((x-screen.Camera.X)*3+1, y, c)
 		}

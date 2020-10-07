@@ -32,12 +32,12 @@ func RSI(n int, quotes []stocks.Quote, plot *image.RGBA, screen *view.Screen) {
 
 		y := rsi * 100
 		for i := 0.0; i < y; i++ {
-			for j := -1; j < 2; j++ {
+			for j := 0; j < 3; j++ {
 				plot.Set((x-screen.Camera.X)*3+j, int(i), color.RGBA{190, 46, 221, 40})
 			}
 		}
 
-		for j := -1; j < 2; j++ {
+		for j := 0; j < 3; j++ {
 			plot.Set((x-screen.Camera.X)*3+j, 100, color.RGBA{190, 46, 221, 60})
 		}
 	}

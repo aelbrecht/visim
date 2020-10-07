@@ -12,12 +12,11 @@ func HandleCamera(s *view.Screen) {
 	x, y := ebiten.CursorPosition()
 	dx, dy := lastX-x, lastY-y
 
-	if s.HasMoved {
-		s.Camera.X += dx / 3
-		s.Camera.Y += dy
-	}
-
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+		if s.HasMoved {
+			s.Camera.X += dx / 3
+			s.Camera.Y += dy
+		}
 		s.HasMoved = true
 	} else {
 		s.HasMoved = false
