@@ -11,7 +11,7 @@ import (
 
 func Bollinger(n int, quotes []stocks.Quote, plot *image.RGBA, screen *view.Screen) {
 
-	for x := screen.Camera.X; x < screen.Camera.X+screen.Window.W/3; x++ {
+	for x := screen.Camera.X; x < screen.Camera.X+screen.Window.W/int(screen.Camera.ScaleX); x++ {
 
 		if x < n || x >= len(quotes) {
 			continue
@@ -37,8 +37,8 @@ func Bollinger(n int, quotes []stocks.Quote, plot *image.RGBA, screen *view.Scre
 		}
 
 		for i := lb; i < ub; i++ {
-			for j := 0; j < 3; j++ {
-				plot.Set((x-screen.Camera.X)*3+j, int(i), c)
+			for j := 0; j < int(screen.Camera.ScaleX); j++ {
+				plot.Set((x-screen.Camera.X)*int(screen.Camera.ScaleX)+j, int(i), c)
 			}
 		}
 

@@ -76,7 +76,7 @@ func (g *Game) Update(screen *ebiten.Image) error {
 
 	debug := fmt.Sprintf("%d", int(ebiten.CurrentFPS()))
 
-	quoteIndex := g.Screen.Camera.X + g.Screen.Cursor.X/3
+	quoteIndex := g.Screen.Camera.X + g.Screen.Cursor.X/int(g.Screen.Camera.ScaleX)
 	if quoteIndex > 0 && quoteIndex < len(g.Model.Quotes) {
 		plots.TooltipCandle(quoteIndex, g.Model.Quotes, g.Buffers.Tooltip, g.Screen)
 		if quoteIndex > 20 {
@@ -142,7 +142,7 @@ func main() {
 			},
 		},
 		Screen: &view.Screen{
-			Camera: &view.Camera{},
+			Camera: &view.Camera{ScaleX: 3},
 			Window: view.Window{w, h},
 		},
 		Plot: image.NewRGBA(image.Rectangle{

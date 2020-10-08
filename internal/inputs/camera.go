@@ -1,6 +1,7 @@
 package inputs
 
 import (
+	"fmt"
 	"github.com/hajimehoshi/ebiten"
 	"visim.muon.one/internal/view"
 )
@@ -15,7 +16,22 @@ func HandleCamera(s *view.Screen) {
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 		if s.HasMoved {
 			s.Camera.X += dx / 3
-			s.Camera.Y += dy
+			s.Camera.Y -= dy
+			if s.Camera.Y < 0 {
+				s.Camera.Y = 0
+			} else if s.Camera.Y > 500 {
+				s.Camera.Y = 500
+			}
+			s.Camera.ScaleXF = (float64(s.Camera.Y) / 50.0) + 3
+			sx := int(s.Camera.ScaleXF)
+			if sx != s.Camera.ScaleX {
+				w1 := s.Window.W / s.Camera.ScaleX
+				w2 := s.Window.W / sx
+				dw := w2 - w1
+				s.Camera.X -= dw / 2
+				fmt.Printf("%d,%d", w1, w2)
+			}
+			s.Camera.ScaleX = sx
 		}
 		s.HasMoved = true
 	} else {
