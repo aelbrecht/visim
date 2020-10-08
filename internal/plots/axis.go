@@ -14,15 +14,25 @@ import (
 func Axis(m *stocks.Model, plot *image.RGBA, screen *view.Screen) {
 	c := color.RGBA{104, 109, 224, 25}
 
-	PlotY(func(y int, v float64) {
-		sv := v-math.Round(v)
-		if !(math.Abs(sv) < 0.005) {
-			return
+	ly := math.Floor(screen.Camera.Bottom)
+	for ly < screen.Camera.Top {
+		y := int((ly - screen.Camera.Bottom) * screen.Camera.ScaleY)
+		for x := 0; x < screen.Window.W; x++ {
+			for j := -1; j < 2; j++ {
+				plot.Set(x, y+j, c)
+			}
 		}
+		ly += 1
+	}
+
+	ly = math.Floor(screen.Camera.Bottom)
+	for ly < screen.Camera.Top {
+		y := int((ly - screen.Camera.Bottom) * screen.Camera.ScaleY)
 		for x := 0; x < screen.Window.W; x++ {
 			plot.Set(x, y, c)
 		}
-	}, screen)
+		ly += 0.1
+	}
 
 	PlotX(func(i int) {
 		q := m.GetQuote(i)

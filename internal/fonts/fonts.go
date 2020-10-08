@@ -10,6 +10,7 @@ import (
 )
 
 var FaceNormal font.Face
+var FaceHuge font.Face
 var bg *ebiten.Image
 
 func init() {
@@ -30,6 +31,11 @@ func init() {
 
 	FaceNormal = truetype.NewFace(tt, &truetype.Options{
 		Size:    16,
+		DPI:     dpi,
+		Hinting: font.HintingFull,
+	})
+	FaceHuge = truetype.NewFace(tt, &truetype.Options{
+		Size:    48,
 		DPI:     dpi,
 		Hinting: font.HintingFull,
 	})

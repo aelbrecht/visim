@@ -3,9 +3,12 @@ package main
 import (
 	"fmt"
 	"github.com/hajimehoshi/ebiten/ebitenutil"
+	"github.com/hajimehoshi/ebiten/text"
 	"image"
 	"image/color"
 	"log"
+	"math"
+	"visim.muon.one/internal/fonts"
 	"visim.muon.one/internal/inputs"
 	"visim.muon.one/internal/plots"
 	"visim.muon.one/internal/stocks"
@@ -91,6 +94,14 @@ func (g *Game) Update(screen *ebiten.Image) error {
 	op.GeoM.Scale(1, -1)
 	op.GeoM.Translate(0, float64(g.Screen.Window.H))
 	screen.DrawImage(g.Buffers.Plot, &op)
+
+	// draw text for plot
+	ly := math.Floor(g.Screen.Camera.Bottom)
+	for ly < g.Screen.Camera.Top {
+		y := int((ly - g.Screen.Camera.Bottom) * g.Screen.Camera.ScaleY)
+		text.Draw(screen, fmt.Sprintf("%d", int(ly)), fonts.FaceHuge, 10, g.Screen.Window.H-y-10, color.RGBA{104, 109, 224, 150})
+		ly += 1
+	}
 
 	// draw tooltip buffer
 	if !ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {

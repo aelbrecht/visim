@@ -1,7 +1,6 @@
 package inputs
 
 import (
-	"fmt"
 	"github.com/hajimehoshi/ebiten"
 	"visim.muon.one/internal/view"
 )
@@ -29,7 +28,6 @@ func HandleCamera(s *view.Screen) {
 				w2 := s.Window.W / sx
 				dw := w2 - w1
 				s.Camera.X -= dw / 2
-				fmt.Printf("%d,%d", w1, w2)
 			}
 			s.Camera.ScaleX = sx
 		}
