@@ -58,13 +58,15 @@ func (g *Game) Update(screen *ebiten.Image) error {
 
 		g.Buffers.Plot.Fill(color.RGBA{19, 15, 64, 255})
 
+		plots.Axis(&g.Model, g.Plot, g.Screen)
+
 		if g.Options.ShowRSI {
-			plots.RSI(20, g.Model.Quotes, g.Plot, g.Screen)
+			plots.RSI(14, g.Model.Quotes, g.Plot, g.Screen)
 			plotToBuffer(g)
 		}
 
 		if g.Options.ShowBollinger {
-			plots.Bollinger(20, g.Model.Quotes, g.Plot, g.Screen)
+			plots.Bollinger(27, g.Model.Quotes, g.Plot, g.Screen)
 			plotToBuffer(g)
 		}
 
