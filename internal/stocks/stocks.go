@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Model struct {
@@ -41,12 +42,42 @@ func GetDataCSV(file string) []Quote {
 }
 
 func formatData(rawText string) []Quote {
+
 	rawRows := strings.Split(rawText, "\n")
-	rows := make([]Quote, len(rawRows))
-	for i, row := range rawRows {
+	fmt.Printf("cleaning dataset containing %d data points\n", len(rawRows))
+	benchStart := time.Now()
+
+	rows := make([]Quote, 0)
+
+	// set start of data
+	startTimestamp, err := strconv.ParseInt(strings.Split(rawRows[0], ",")[0], 10, 64)
+	handleFatal(err)
+	startTime := time.Unix(startTimestamp, 0)
+
+	startMinute, _ := strconv.Atoi(startTime.Format("04"))
+	for startMinute > 30 || startMinute < 30 {
+		startTime = startTime.Add(time.Minute)
+		startMinute, _ = strconv.Atoi(startTime.Format("04"))
+	}
+	startHour, _ := strconv.Atoi(startTime.Format("15"))
+	for startHour > 18 || startHour < 11 {
+		startTime = startTime.Add(time.Hour)
+		startHour, _ = strconv.Atoi(startTime.Format("15"))
+	}
+
+	for _, row := range rawRows {
+
+		if startTime.Format("15:04") == "18:01" {
+			startTime = startTime.Add(time.Hour*17 + time.Minute*30)
+		}
+
+		if startTime.Format("Mon") == "Sat" {
+			startTime = startTime.Add(time.Hour * 24 * 2)
+		}
+
 		items := strings.Split(row, ",")
 
-		time, err := strconv.ParseInt(items[0], 10, 64)
+		timestamp, err := strconv.ParseInt(items[0], 10, 64)
 		handleFatal(err)
 		priceOpen, err := strconv.ParseFloat(items[1], 64)
 		handleFatal(err)
@@ -59,15 +90,44 @@ func formatData(rawText string) []Quote {
 		volume, err := strconv.ParseInt(items[5], 10, 64)
 		handleFatal(err)
 
-		rows[i] = Quote{
-			Time:   time,
+		quoteTime := time.Unix(timestamp, 0)
+		stu := startTime.Unix()
+		qtu := quoteTime.Unix()
+		for stu != qtu {
+			if qtu < stu {
+				break
+			} else {
+				j := len(rows) - 1
+				rows = append(rows, Quote{
+					Time:   startTime.Unix(),
+					Open:   rows[j].Close,
+					High:   rows[j].Close,
+					Low:    rows[j].Close,
+					Close:  rows[j].Close,
+					Volume: 0,
+				})
+				startTime = startTime.Add(time.Minute)
+			}
+			stu = startTime.Unix()
+		}
+		if qtu < stu {
+			continue
+		}
+		//if startTime.Format("15:04") == ""
+		startTime = startTime.Add(time.Minute)
+
+		rows = append(rows, Quote{
+			Time:   timestamp,
 			Open:   priceOpen,
 			High:   priceHigh,
 			Low:    priceLow,
 			Close:  priceClose,
 			Volume: volume,
-		}
+		})
 	}
+
+	elapsed := time.Now().Sub(benchStart).Milliseconds()
+	fmt.Printf("final set contains %d data points, cleanup took %dms\n", len(rows), elapsed)
 
 	return rows
 }

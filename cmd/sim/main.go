@@ -141,7 +141,9 @@ func handleFatal(err error) {
 
 func main() {
 
-	data := stocks.GetDataCSV("./data/msft.csv")
+	//data := stocks.GetDataCSV("./data/msft.csv")
+	data := stocks.GetData("AAPL","2020-10-01","2020-10-03")
+
 	w, h := 1280, 800
 	bufferDraw, err := ebiten.NewImage(w, h, ebiten.FilterDefault)
 	handleFatal(err)

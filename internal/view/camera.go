@@ -6,12 +6,12 @@ import (
 )
 
 type Camera struct {
-	X, Y   int
-	ScaleX int
+	X, Y    int
+	ScaleX  int
 	ScaleXF float64
-	ScaleY float64
-	Top    float64
-	Bottom float64
+	ScaleY  float64
+	Top     float64
+	Bottom  float64
 }
 
 type Window struct {
@@ -52,6 +52,9 @@ func (screen *Screen) AutoYAxis(quotes []stocks.Quote) {
 	max += minMaxDelta / 10
 	minMaxDelta = max - min
 
+	if minMaxDelta < 0.01 {
+		minMaxDelta = 0.01
+	}
 	screen.Camera.ScaleY = float64(screen.Window.H) / minMaxDelta
 	screen.Camera.Top = max
 	screen.Camera.Bottom = min
