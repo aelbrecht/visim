@@ -48,8 +48,8 @@ func (screen *Screen) AutoYAxis(quotes []stocks.Quote) {
 
 	// add some padding
 	minMaxDelta := max - min
-	min -= minMaxDelta / 3
-	max += minMaxDelta / 3
+	min -= minMaxDelta / 2
+	max += minMaxDelta / 10
 	minMaxDelta = max - min
 
 	screen.Camera.ScaleY = float64(screen.Window.H) / minMaxDelta

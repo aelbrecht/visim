@@ -43,10 +43,9 @@ func RSI(n int, quotes []stocks.Quote, plot *image.RGBA, screen *view.Screen) {
 
 		y := rsi * 100
 		for i := 0.0; i < y; i++ {
-			for j := 0; j < int(screen.Camera.ScaleX); j++ {
-				plot.Set((x-screen.Camera.X)*int(screen.Camera.ScaleX)+j, int(i), c)
+			for j := 0; j < screen.Camera.ScaleX; j++ {
+				plot.Set((x-screen.Camera.X)*screen.Camera.ScaleX+j, int(i), c)
 			}
 		}
 	}
-
 }

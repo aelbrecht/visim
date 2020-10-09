@@ -18,7 +18,7 @@ import (
 )
 
 type Game struct {
-	Model       stocks.Model
+	Model       *stocks.Model
 	Screen      *view.Screen
 	Plot        *image.RGBA
 	Buffers     Buffers
@@ -61,7 +61,7 @@ func (g *Game) Update(screen *ebiten.Image) error {
 
 		g.Buffers.Plot.Fill(color.RGBA{19, 15, 64, 255})
 
-		plots.Axis(&g.Model, g.Plot, g.Screen)
+		plots.Axis(g.Model, g.Plot, g.Screen)
 
 		if g.Options.ShowRSI {
 			plots.RSI(14, g.Model.Quotes, g.Plot, g.Screen)
@@ -75,6 +75,11 @@ func (g *Game) Update(screen *ebiten.Image) error {
 
 		if g.Options.ShowQuotes {
 			plots.Candles(g.Model.Quotes, g.Plot, g.Screen)
+			plotToBuffer(g)
+		}
+
+		if g.Options.ShowSupportResistance {
+			plots.Resistance(5, g.Model, g.Plot, g.Screen)
 			plotToBuffer(g)
 		}
 	}
@@ -148,7 +153,7 @@ func main() {
 	handleFatal(err)
 
 	game := Game{
-		Model: stocks.Model{
+		Model: &stocks.Model{
 			Quotes: data,
 			Bot: stocks.Bot{
 				Cursor: 0,

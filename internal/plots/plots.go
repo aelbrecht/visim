@@ -24,3 +24,9 @@ func PlotY(f func(y int, v float64), s *view.Screen) {
 func SetPixel(x int, y int, c color.Color, p *image.RGBA, s *view.Screen) {
 	p.Set((x-s.Camera.X)*s.Camera.ScaleX+s.Camera.ScaleX/2, y, c)
 }
+
+func SetDash(x int, y int, w int, c color.Color, p *image.RGBA, s *view.Screen) {
+	for j := -w/2; j < w/2; j++ {
+		p.Set((x-s.Camera.X)*s.Camera.ScaleX+s.Camera.ScaleX/2+j, y, c)
+	}
+}

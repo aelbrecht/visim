@@ -6,6 +6,7 @@ var (
 	Pressed1 = false
 	Pressed2 = false
 	Pressed3 = false
+	Pressed4 = false
 )
 
 func HandlePlot(options *Options) bool {
@@ -42,11 +43,22 @@ func HandlePlot(options *Options) bool {
 		}
 	}
 
+	if ebiten.IsKeyPressed(ebiten.KeyF4) {
+		Pressed4 = true
+	} else {
+		if Pressed4 {
+			Pressed4 = false
+			options.ShowSupportResistance = !options.ShowSupportResistance
+			update = true
+		}
+	}
+
 	return update
 }
 
 type Options struct {
-	ShowBollinger bool
-	ShowRSI       bool
-	ShowQuotes    bool
+	ShowBollinger         bool
+	ShowRSI               bool
+	ShowQuotes            bool
+	ShowSupportResistance bool
 }
