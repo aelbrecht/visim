@@ -52,7 +52,7 @@ func formatData(rawText string) []Quote {
 	// set start of data
 	startTimestamp, err := strconv.ParseInt(strings.Split(rawRows[0], ",")[0], 10, 64)
 	handleFatal(err)
-	startTime := time.Unix(startTimestamp, 0)
+	startTime := time.Unix(startTimestamp, 0).In(time.FixedZone("GMT", 0))
 
 	startMinute, _ := strconv.Atoi(startTime.Format("04"))
 	for startMinute > 30 || startMinute < 30 {
@@ -60,14 +60,13 @@ func formatData(rawText string) []Quote {
 		startMinute, _ = strconv.Atoi(startTime.Format("04"))
 	}
 	startHour, _ := strconv.Atoi(startTime.Format("15"))
-	for startHour > 18 || startHour < 11 {
+	for startHour > 16 || startHour < 9 {
 		startTime = startTime.Add(time.Hour)
 		startHour, _ = strconv.Atoi(startTime.Format("15"))
 	}
 
 	for _, row := range rawRows {
-
-		if startTime.Format("15:04") == "18:01" {
+		if startTime.Format("15:04") == "16:01" {
 			startTime = startTime.Add(time.Hour*17 + time.Minute*30)
 		}
 
@@ -113,7 +112,7 @@ func formatData(rawText string) []Quote {
 		if qtu < stu {
 			continue
 		}
-		//if startTime.Format("15:04") == ""
+
 		startTime = startTime.Add(time.Minute)
 
 		rows = append(rows, Quote{

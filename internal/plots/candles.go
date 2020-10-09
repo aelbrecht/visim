@@ -18,10 +18,9 @@ func TooltipCandle(i int, quotes []stocks.Quote, buffer *ebiten.Image, screen *v
 	x := (i-screen.Camera.X)*int(screen.Camera.ScaleX) + paddingLeft
 	y0 := screen.Window.H - int((q.High-screen.Camera.Bottom)*screen.Camera.ScaleY)
 	fonts.Background(x-3, y0+13*6+6, 120, 16*6, color.RGBA{48, 51, 107, 200}, buffer)
-	date := time.Unix(q.Time, 0)
+	date := time.Unix(q.Time, 0).In(time.FixedZone("GMT", 0))
 	stringDate := strings.Split(date.Format(time.RFC3339), "T")
-	text.Draw(buffer, stringDate[0], fonts.FaceNormal, x, y0, color.White)
-	text.Draw(buffer, stringDate[1], fonts.FaceNormal, x, y0+16, color.White)
+	text.Draw(buffer, stringDate[0]+" "+strings.Split(stringDate[1], "Z")[0], fonts.FaceNormal, x, y0, color.White)
 	text.Draw(buffer, fmt.Sprintf("Open:  %f", q.Open), fonts.FaceNormal, x, y0+16*2, color.White)
 	text.Draw(buffer, fmt.Sprintf("High:  %f", q.High), fonts.FaceNormal, x, y0+16*3, color.White)
 	text.Draw(buffer, fmt.Sprintf("Low:   %f", q.Low), fonts.FaceNormal, x, y0+16*4, color.White)
@@ -57,7 +56,7 @@ func Candles(quotes []stocks.Quote, plot *image.RGBA, screen *view.Screen) {
 			plot.Set((x-screen.Camera.X)*int(screen.Camera.ScaleX)+j, yc, c)
 		}
 		for y := lb; y < ub; y++ {
-			plot.Set((x-screen.Camera.X)*int(screen.Camera.ScaleX)+int(screen.Camera.ScaleX / 2), y, c)
+			plot.Set((x-screen.Camera.X)*int(screen.Camera.ScaleX)+int(screen.Camera.ScaleX/2), y, c)
 		}
 	}
 
