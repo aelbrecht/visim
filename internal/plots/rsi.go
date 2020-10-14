@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/hajimehoshi/ebiten"
 	"github.com/hajimehoshi/ebiten/text"
-	"image"
 	"image/color"
 	"math"
 	"visim.muon.one/internal/fonts"
@@ -21,15 +20,16 @@ func TooltipRSI(i int, n int, quotes []stocks.Quote, buffer *ebiten.Image, scree
 	text.Draw(buffer, fmt.Sprintf("RSI: %d", int(rsi*100)), fonts.FaceNormal, x, y, color.White)
 }
 
-func RSI(n int, quotes []stocks.Quote, plot *image.RGBA, screen *view.Screen) {
+func RSI(n int, data *stocks.MarketDay, plot *ebiten.Image) {
 
-	for x := screen.Camera.X; x < screen.Camera.X+screen.Window.W/int(screen.Camera.ScaleX); x++ {
+	for x := range data.Quotes {
 
-		if x < n || x >= len(quotes) {
+		quotes := data.GetQuotesInRange(x-n, x)
+		if quotes == nil {
 			continue
 		}
 
-		rsi := indicators.RelativeStrengthIndex(quotes[x-n : x])
+		rsi := indicators.RelativeStrengthIndex(quotes)
 
 		sell := math.Max(rsi-0.65, 0) / 0.35
 		buy := math.Max(1-rsi-0.65, 0) / 0.35
@@ -41,11 +41,9 @@ func RSI(n int, quotes []stocks.Quote, plot *image.RGBA, screen *view.Screen) {
 			A: 255,
 		}
 
-		y := rsi * 100
-		for i := 0.0; i < y; i++ {
-			for j := 0; j < screen.Camera.ScaleX; j++ {
-				plot.Set((x-screen.Camera.X)*screen.Camera.ScaleX+j, int(i), c)
-			}
+		y := int(rsi * 100)
+		for i := 0; i < y; i++ {
+			plot.Set(x, i, c)
 		}
 	}
 }

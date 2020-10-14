@@ -7,7 +7,7 @@ import (
 )
 
 func PlotX(f func(i int), s *view.Screen) {
-	for x := s.Camera.X; x < s.Camera.X+s.Window.W/s.Camera.ScaleX; x++ {
+	for x := 0; x < s.Window.W; x++ {
 		f(x)
 	}
 }
@@ -22,7 +22,7 @@ func PlotY(f func(y int, v float64), s *view.Screen) {
 }
 
 func SetPixel(x int, y int, c color.Color, p *image.RGBA, s *view.Screen) {
-	p.Set((x-s.Camera.X)*s.Camera.ScaleX+s.Camera.ScaleX/2, y, c)
+	p.Set(x*s.Camera.ScaleX+s.Camera.ScaleX/2, y, c)
 }
 
 func SetDash(x int, y int, w int, c color.Color, p *image.RGBA, s *view.Screen) {

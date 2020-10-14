@@ -1,53 +1,53 @@
 package plots
 
 import (
-	"image"
+	"github.com/hajimehoshi/ebiten"
 	"image/color"
-	"log"
 	"math"
-	"strconv"
-	"time"
 	"visim.muon.one/internal/stocks"
 	"visim.muon.one/internal/view"
 )
 
-func Axis(m *stocks.Model, plot *image.RGBA, screen *view.Screen) {
-	c := color.RGBA{104, 109, 224, 25}
+var lineX *ebiten.Image
+var lineY *ebiten.Image
+
+func Axis(m *stocks.MarketDay, plot *ebiten.Image, screen *view.Screen) {
+
+	if lineX == nil || lineY == nil {
+		c := color.RGBA{R: 104, G: 109, B: 224, A: 25}
+		lineX, _ = ebiten.NewImage(view.MinutesInDay, 1, ebiten.FilterDefault)
+		lineX.Fill(c)
+		lineY, _ = ebiten.NewImage(1, screen.Window.H, ebiten.FilterDefault)
+		lineY.Fill(c)
+	}
 
 	ly := math.Floor(screen.Camera.Bottom)
 	for ly < screen.Camera.Top {
-		y := int((ly - screen.Camera.Bottom) * screen.Camera.ScaleY)
-		for x := 0; x < screen.Window.W; x++ {
-			for j := -1; j < 2; j++ {
-				plot.Set(x, y+j, c)
-			}
-		}
+		y := (ly - screen.Camera.Bottom) * screen.Camera.ScaleY
+		op := ebiten.DrawImageOptions{}
+		op.GeoM.Translate(0, y)
+		op.GeoM.Scale(3, 1)
+		_ = plot.DrawImage(lineX, &op)
 		ly += 1
 	}
 
 	ly = math.Floor(screen.Camera.Bottom)
 	for ly < screen.Camera.Top {
-		y := int((ly - screen.Camera.Bottom) * screen.Camera.ScaleY)
-		for x := 0; x < screen.Window.W; x++ {
-			plot.Set(x, y, c)
-		}
+		y := (ly - screen.Camera.Bottom) * screen.Camera.ScaleY
+		op := ebiten.DrawImageOptions{}
+		op.GeoM.Translate(0, y)
+		op.GeoM.Scale(3, 1)
+		op.ColorM.Scale(1, 1, 1, 0.5)
+		_ = plot.DrawImage(lineX, &op)
 		ly += 0.1
 	}
 
-	PlotX(func(i int) {
-		q := m.GetQuote(i)
-		if q == nil {
-			return
-		}
-		t := time.Unix(q.Time, 0)
-		minute, err := strconv.Atoi(t.Format("04"))
-		if err != nil {
-			log.Fatal(err)
-		}
-		if minute%10 == 0 {
-			for y := 0; y < screen.Window.H; y++ {
-				SetPixel(i, y, c, plot, screen)
-			}
-		}
-	}, screen)
+	lx := 0
+	for lx < view.MinutesInDay*screen.Camera.ScaleX {
+		op := ebiten.DrawImageOptions{}
+		op.GeoM.Translate(float64(lx), 0)
+		op.ColorM.Scale(1, 1, 1, 0.5)
+		_ = plot.DrawImage(lineY, &op)
+		lx += 10 * screen.Camera.ScaleX
+	}
 }

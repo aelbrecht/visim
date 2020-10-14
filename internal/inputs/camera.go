@@ -10,16 +10,16 @@ var lastY = 0
 
 func HandleCamera(s *view.Screen) {
 	x, y := ebiten.CursorPosition()
-	dx, dy := lastX-x, lastY-y
+	dx, _ := lastX-x, lastY-y
 
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 		if s.HasMoved {
-			s.Camera.X += dx / 3
-			s.Camera.Y -= dy
+			s.Camera.X += dx
+			//s.Camera.Y -= dy
 			if s.Camera.Y < 0 {
-				s.Camera.Y = 0
+				//s.Camera.Y = 0
 			} else if s.Camera.Y > 500 {
-				s.Camera.Y = 500
+				//s.Camera.Y = 500
 			}
 			s.Camera.ScaleXF = (float64(s.Camera.Y) / 50.0) + 3
 			sx := int(s.Camera.ScaleXF)

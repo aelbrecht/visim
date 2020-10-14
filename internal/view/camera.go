@@ -14,6 +14,16 @@ type Camera struct {
 	Bottom  float64
 }
 
+const MinutesInDay = 6*60 + 30
+
+func GetDay(x int) int {
+	return x / (MinutesInDay)
+}
+
+func GetQuoteIndex(x int) int {
+	return x % MinutesInDay
+}
+
 type Window struct {
 	W, H int
 }
@@ -29,20 +39,18 @@ type Screen struct {
 	HasMoved bool
 }
 
-func (screen *Screen) AutoYAxis(quotes []stocks.Quote) {
+func (screen *Screen) AutoYAxis(m *stocks.Model) {
 
 	min := math.MaxFloat64
 	max := 0.0
-	for x := screen.Camera.X; x < screen.Camera.X+screen.Window.W/int(screen.Camera.ScaleX); x++ {
-		if x < 0 || x >= len(quotes) {
-			continue
+
+	for i := range m.Data {
+		m1, m2 := m.Data[i].GetRange()
+		if m1 < min {
+			min = m1
 		}
-		q := quotes[x]
-		if q.Low < min {
-			min = q.Low
-		}
-		if q.High > max {
-			max = q.High
+		if m2 > max {
+			max = m2
 		}
 	}
 

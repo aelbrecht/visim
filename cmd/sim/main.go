@@ -26,11 +26,39 @@ type Game struct {
 	Options     inputs.Options
 }
 
+type DayBuffer struct {
+	Update  bool
+	RSI     *ebiten.Image
+	Candles *ebiten.Image
+	Plot    *ebiten.Image
+}
+
 type Buffers struct {
 	Draw    *ebiten.Image
 	Plot    *ebiten.Image
+	Day     map[int]*DayBuffer
 	Cursor  *ebiten.Image
 	Tooltip *ebiten.Image
+}
+
+func makeDayBuffer(data *stocks.MarketDay, screen *view.Screen) *DayBuffer {
+
+	min, max := data.GetRange()
+	minMax := max - min
+
+	rsiImage, err := ebiten.NewImage(view.MinutesInDay, 100, ebiten.FilterDefault)
+	handleFatal(err)
+	plotImage, err := ebiten.NewImage(screen.Window.W, screen.Window.H, ebiten.FilterDefault)
+	handleFatal(err)
+	candlesImage, err := ebiten.NewImage(view.MinutesInDay*3, int(minMax*100), ebiten.FilterDefault)
+	handleFatal(err)
+
+	return &DayBuffer{
+		Update:  true,
+		RSI:     rsiImage,
+		Candles: candlesImage,
+		Plot:    plotImage,
+	}
 }
 
 func clearPlot(plot *image.RGBA) {
@@ -45,60 +73,102 @@ func plotToBuffer(g *Game) {
 	clearPlot(g.Plot)
 }
 
-func (g *Game) Update(screen *ebiten.Image) error {
+func (g *Game) PlotDay(day int, screen *ebiten.Image) {
 
-	inputs.HandleCamera(g.Screen)
-	g.ForceRender = inputs.HandlePlot(&g.Options) || g.ForceRender
+	if g.Buffers.Day[day] == nil {
+		g.Buffers.Day[day] = makeDayBuffer(g.Model.GetQuoteDay(day), g.Screen)
+	}
 
-	g.Screen.AutoYAxis(g.Model.Quotes)
+	b := g.Buffers.Day[day]
+	data := g.Model.GetQuoteDay(day)
+	cam := g.Screen.Camera
 
-	// clear existing buffers
-	g.Buffers.Tooltip.Clear()
+	if b.Update {
+
+		data := g.Model.GetQuoteDay(day)
+
+		fmt.Printf("plot day %d rendered\n", day)
+
+		plots.Candles(data, b.Candles)
+
+		plots.RSI(14, data, b.RSI)
+
+		b.Update = false
+	}
 
 	// only update plot if moved, reduces cpu usage
 	if g.Screen.HasMoved || g.ForceRender {
-		g.ForceRender = false
 
-		g.Buffers.Plot.Fill(color.RGBA{19, 15, 64, 255})
+		// draw axis
+		b.Plot.Clear()
+		plots.Axis(g.Model.GetQuoteDay(day), b.Plot, g.Screen)
 
-		plots.Axis(g.Model, g.Plot, g.Screen)
+		// draw candles
+		min, _ := data.GetRange()
+		bottomDelta := (min - cam.Bottom) * cam.ScaleY
+		op := ebiten.DrawImageOptions{}
+		op.GeoM.Scale(1, cam.ScaleY/100)
+		op.GeoM.Translate(0, bottomDelta)
+		b.Plot.DrawImage(b.Candles, &op)
 
-		if g.Options.ShowRSI {
-			plots.RSI(14, g.Model.Quotes, g.Plot, g.Screen)
-			plotToBuffer(g)
-		}
+		// draw rsi bars
+		op = ebiten.DrawImageOptions{}
+		op.GeoM.Scale(3, 1)
+		b.Plot.DrawImage(b.RSI, &op)
 
-		if g.Options.ShowBollinger {
-			plots.Bollinger(27, g.Model.Quotes, g.Plot, g.Screen)
-			plotToBuffer(g)
-		}
+		/*
 
-		if g.Options.ShowQuotes {
-			plots.Candles(g.Model.Quotes, g.Plot, g.Screen)
-			plotToBuffer(g)
-		}
+			if g.Options.ShowBollinger {
+				plots.Bollinger(27, g.Model.GetQuoteDay(day), g.Plot, g.Screen)
+				plotToBuffer(g)
+			}
 
-		if g.Options.ShowSupportResistance {
-			plots.Resistance(5, g.Model, g.Plot, g.Screen)
-			plotToBuffer(g)
-		}
-	}
+			if g.Options.ShowQuotes {
+				plots.Candles(g.Model.GetQuoteDay(day), g.Plot, g.Screen)
+				plotToBuffer(g)
+			}
 
-	debug := fmt.Sprintf("%d", int(ebiten.CurrentFPS()))
-
-	quoteIndex := g.Screen.Camera.X + g.Screen.Cursor.X/int(g.Screen.Camera.ScaleX)
-	if quoteIndex > 0 && quoteIndex < len(g.Model.Quotes) {
-		plots.TooltipCandle(quoteIndex, g.Model.Quotes, g.Buffers.Tooltip, g.Screen)
-		if quoteIndex > 20 {
-			plots.TooltipRSI(quoteIndex, 20, g.Model.Quotes, g.Buffers.Tooltip, g.Screen)
-		}
+			if g.Options.ShowSupportResistance {
+				plots.Resistance(5, g.Model.GetQuoteDay(day), g.Plot, g.Screen)
+				plotToBuffer(g)
+			}*/
 	}
 
 	// draw plot
 	op := ebiten.DrawImageOptions{}
 	op.GeoM.Scale(1, -1)
 	op.GeoM.Translate(0, float64(g.Screen.Window.H))
-	screen.DrawImage(g.Buffers.Plot, &op)
+	op.GeoM.Translate(float64(view.MinutesInDay*day*cam.ScaleX), 0)
+	op.GeoM.Translate(-float64(cam.X*cam.ScaleX), 0)
+	g.Buffers.Plot.DrawImage(b.Plot, &op)
+}
+
+func (g *Game) Update(screen *ebiten.Image) error {
+
+	inputs.HandleCamera(g.Screen)
+	g.ForceRender = inputs.HandlePlot(&g.Options) || g.ForceRender
+
+	g.Screen.AutoYAxis(g.Model)
+
+	// clear existing buffers
+	g.Buffers.Tooltip.Clear()
+
+	screen.Fill(color.RGBA{R: 19, G: 15, B: 64, A: 255})
+	g.Buffers.Plot.Clear()
+	g.PlotDay(0, screen)
+	g.PlotDay(1, screen)
+	screen.DrawImage(g.Buffers.Plot, nil)
+	g.ForceRender = false
+
+	debug := fmt.Sprintf("%d", int(ebiten.CurrentFPS()))
+
+	quoteIndex := g.Screen.Camera.X + g.Screen.Cursor.X/int(g.Screen.Camera.ScaleX)
+	if quoteIndex > 0 && quoteIndex < len(g.Model.Data[0].Quotes) {
+		plots.TooltipCandle(quoteIndex, g.Model.Data[0].Quotes, g.Buffers.Tooltip, g.Screen)
+		if quoteIndex > 20 {
+			plots.TooltipRSI(quoteIndex, 20, g.Model.Data[0].Quotes, g.Buffers.Tooltip, g.Screen)
+		}
+	}
 
 	// draw text for plot
 	ly := math.Floor(g.Screen.Camera.Bottom)
@@ -114,7 +184,7 @@ func (g *Game) Update(screen *ebiten.Image) error {
 	}
 
 	// draw cursor buffer
-	op = ebiten.DrawImageOptions{}
+	op := ebiten.DrawImageOptions{}
 	op.GeoM.Translate(float64(g.Screen.Cursor.X), 0)
 	g.Buffers.Cursor.Fill(color.RGBA{104, 109, 224, 150})
 	screen.DrawImage(g.Buffers.Cursor, &op)
@@ -156,7 +226,7 @@ func main() {
 
 	game := Game{
 		Model: &stocks.Model{
-			Quotes: data,
+			Data: data,
 			Bot: stocks.Bot{
 				Cursor: 0,
 			},
@@ -173,6 +243,7 @@ func main() {
 			Plot:    bufferPlot,
 			Tooltip: tooltipPlot,
 			Cursor:  bufferCursor,
+			Day:     make(map[int]*DayBuffer),
 		},
 		Options: inputs.Options{
 			ShowBollinger: true,

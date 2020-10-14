@@ -12,8 +12,17 @@ import (
 )
 
 type Model struct {
-	Quotes []Quote
-	Bot    Bot
+	Data []*MarketDay
+	Bot  Bot
+}
+
+type DailyHistory = []*MarketDay
+
+type MarketDay struct {
+	modified bool
+	Quotes   []Quote
+	min      float64
+	max      float64
 }
 
 type Bot struct {
@@ -35,19 +44,23 @@ func handleFatal(err error) {
 	}
 }
 
-func GetDataCSV(file string) []Quote {
+func GetDataCSV(file string) DailyHistory {
 	body, err := ioutil.ReadFile(file)
 	handleFatal(err)
 	return formatData(string(body))
 }
 
-func formatData(rawText string) []Quote {
+func formatData(rawText string) DailyHistory {
+
+	days := make([]*MarketDay, 0)
 
 	rawRows := strings.Split(rawText, "\n")
-	fmt.Printf("cleaning dataset containing %d data points\n", len(rawRows))
+	fmt.Printf("parsing dataset containing %d data points\n", len(rawRows))
+
 	benchStart := time.Now()
 
 	rows := make([]Quote, 0)
+	points := 0
 
 	// set start of data
 	startTimestamp, err := strconv.ParseInt(strings.Split(rawRows[0], ",")[0], 10, 64)
@@ -68,6 +81,14 @@ func formatData(rawText string) []Quote {
 	for _, row := range rawRows {
 		if startTime.Format("15:04") == "16:01" {
 			startTime = startTime.Add(time.Hour*17 + time.Minute*30)
+			if points > 0 {
+				days = append(days, &MarketDay{
+					Quotes:   rows,
+					modified: true,
+				})
+			}
+			rows = make([]Quote, 0)
+			points = 0
 		}
 
 		if startTime.Format("Mon") == "Sat" {
@@ -123,15 +144,16 @@ func formatData(rawText string) []Quote {
 			Close:  priceClose,
 			Volume: volume,
 		})
+		points++
 	}
 
 	elapsed := time.Now().Sub(benchStart).Milliseconds()
-	fmt.Printf("final set contains %d data points, cleanup took %dms\n", len(rows), elapsed)
+	fmt.Printf("final set is %d day(s), cleanup took %dms\n", len(days), elapsed)
 
-	return rows
+	return days
 }
 
-func GetData(symbol string, from string, to string) []Quote {
+func GetData(symbol string, from string, to string) DailyHistory {
 
 	host := os.Getenv("API_URL")
 

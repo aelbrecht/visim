@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/hajimehoshi/ebiten"
 	"github.com/hajimehoshi/ebiten/text"
-	"image"
 	"image/color"
 	"strings"
 	"time"
@@ -27,37 +26,35 @@ func TooltipCandle(i int, quotes []stocks.Quote, buffer *ebiten.Image, screen *v
 	text.Draw(buffer, fmt.Sprintf("Close: %f", q.Close), fonts.FaceNormal, x, y0+16*5, color.White)
 }
 
-func Candles(quotes []stocks.Quote, plot *image.RGBA, screen *view.Screen) {
+func Candles(data *stocks.MarketDay, plot *ebiten.Image) {
 
-	for x := screen.Camera.X; x < screen.Camera.X+screen.Window.W/int(screen.Camera.ScaleX); x++ {
+	min, _ := data.GetRange()
 
-		if x < 0 || x >= len(quotes) {
-			continue
-		}
+	for i, q := range data.Quotes {
 
-		q := quotes[x]
+		x := i * 3
 
-		lb := int((q.Low - screen.Camera.Bottom) * screen.Camera.ScaleY)
-		ub := int((q.High - screen.Camera.Bottom) * screen.Camera.ScaleY)
-		yo := int((q.Open - screen.Camera.Bottom) * screen.Camera.ScaleY)
-		yc := int((q.Close - screen.Camera.Bottom) * screen.Camera.ScaleY)
+		lb := int((q.Low - min) * 100)
+		ub := int((q.High - min) * 100)
+		yo := int((q.Open - min) * 100)
+		yc := int((q.Close - min) * 100)
 
-		c := color.RGBA{235, 77, 75, 255}
+		c := color.RGBA{R: 249, G: 202, B: 36, A: 255}
 		if q.Open < q.Close {
-			c = color.RGBA{106, 176, 76, 255}
-		} else if q.Open == q.Close {
-			c = color.RGBA{249, 202, 36, 255}
+			c = color.RGBA{R: 106, G: 176, B: 76, A: 255}
+		} else if q.Open > q.Close {
+			c = color.RGBA{R: 235, G: 77, B: 75, A: 255}
 		}
 
-		for j := 0; j < int(screen.Camera.ScaleX/2); j++ {
-			plot.Set((x-screen.Camera.X)*int(screen.Camera.ScaleX)+j, yo, c)
+		for j := 0; j < 2; j++ {
+			plot.Set(x+j, yo, c)
 		}
-		for j := int(screen.Camera.ScaleX / 2); j < int(screen.Camera.ScaleX); j++ {
-			plot.Set((x-screen.Camera.X)*int(screen.Camera.ScaleX)+j, yc, c)
+		for j := 1; j < 3; j++ {
+			plot.Set(x+j, yc, c)
 		}
-		for y := lb; y < ub; y++ {
-			plot.Set((x-screen.Camera.X)*int(screen.Camera.ScaleX)+int(screen.Camera.ScaleX/2), y, c)
+		for j := lb; j < ub; j++ {
+			plot.Set(x+1, j, c)
 		}
+
 	}
-
 }

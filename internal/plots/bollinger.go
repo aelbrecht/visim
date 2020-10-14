@@ -9,18 +9,18 @@ import (
 	"visim.muon.one/internal/view"
 )
 
-func Bollinger(n int, quotes []stocks.Quote, plot *image.RGBA, screen *view.Screen) {
+func Bollinger(n int, data *stocks.MarketDay, plot *image.RGBA, screen *view.Screen) {
 
-	for x := screen.Camera.X; x < screen.Camera.X+screen.Window.W/int(screen.Camera.ScaleX); x++ {
+	PlotX(func(x int) {
+		quotes := data.GetQuotesInRange(x-n, x)
+		q := data.GetQuote(x)
 
-		if x < n || x >= len(quotes) {
-			continue
+		if quotes == nil || q == nil {
+			return
 		}
 
-		q := quotes[x]
-
-		std := indicators.StandardDeviation(quotes[x-n : x])
-		sma := indicators.SimpleMeanAverage(quotes[x-n : x])
+		std := indicators.StandardDeviation(quotes)
+		sma := indicators.SimpleMeanAverage(quotes)
 
 		y := (sma - screen.Camera.Bottom) * screen.Camera.ScaleY
 		ub := (sma + 2*std - screen.Camera.Bottom) * screen.Camera.ScaleY
@@ -43,6 +43,5 @@ func Bollinger(n int, quotes []stocks.Quote, plot *image.RGBA, screen *view.Scre
 		}
 
 		plot.Set((x-screen.Camera.X)*screen.Camera.ScaleX+screen.Camera.ScaleX/2, int(y), color.RGBA{126, 214, 223, 255})
-	}
-
+	}, screen)
 }

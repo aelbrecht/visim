@@ -8,17 +8,17 @@ import (
 	"visim.muon.one/internal/view"
 )
 
-func Resistance(n int, m *stocks.Model, plot *image.RGBA, screen *view.Screen) {
+func Resistance(n int, m *stocks.MarketDay, plot *image.RGBA, screen *view.Screen) {
 
 	c1 := color.RGBA{255, 0, 0, 100}
 	c2 := color.RGBA{0, 255, 0, 100}
 
 	PlotX(func(i int) {
-		quotes1 := m.GetQuoteRange(i-n-2, i-2)
-		quotes2 := m.GetQuoteRange(i-n-1, i-1)
-		quotes3 := m.GetQuoteRange(i-n, i)
+		quotes1 := m.GetQuotesInRange(i-n-2, i-2)
+		quotes2 := m.GetQuotesInRange(i-n-1, i-1)
+		quotes3 := m.GetQuotesInRange(i-n, i)
 
-		if quotes1 == nil || quotes2 == nil {
+		if quotes1 == nil || quotes2 == nil || quotes3 == nil {
 			return
 		}
 
@@ -29,7 +29,7 @@ func Resistance(n int, m *stocks.Model, plot *image.RGBA, screen *view.Screen) {
 		if avg1 < avg2 && avg3 < avg2 {
 			SetPixel(i-n/2-1, 100, c2, plot, screen)
 
-			qs := m.GetQuoteRange(i-n/2-2-5, i-n/2-2+5)
+			qs := m.GetQuotesInRange(i-n/2-2-5, i-n/2-2+5)
 			high := 0.0
 			for i2 := range qs {
 				if qs[i2].High > high {
@@ -44,7 +44,7 @@ func Resistance(n int, m *stocks.Model, plot *image.RGBA, screen *view.Screen) {
 
 		if avg1 > avg2 && avg3 > avg2 {
 			SetPixel(i-n/2-1, 100, c1, plot, screen)
-			qs := m.GetQuoteRange(i-n/2-2-5, i-n/2-2+5)
+			qs := m.GetQuotesInRange(i-n/2-2-5, i-n/2-2+5)
 			low := 99999.0
 			for i2 := range qs {
 				if qs[i2].Low < low {
