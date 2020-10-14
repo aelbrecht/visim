@@ -27,10 +27,11 @@ type Game struct {
 }
 
 type DayBuffer struct {
-	Update  bool
-	RSI     *ebiten.Image
-	Candles *ebiten.Image
-	Plot    *ebiten.Image
+	Update    bool
+	RSI       *ebiten.Image
+	Bollinger *ebiten.Image
+	Candles   *ebiten.Image
+	Plot      *ebiten.Image
 }
 
 type Buffers struct {
@@ -52,12 +53,15 @@ func makeDayBuffer(data *stocks.MarketDay, screen *view.Screen) *DayBuffer {
 	handleFatal(err)
 	candlesImage, err := ebiten.NewImage(view.MinutesInDay*3, int(minMax*100), ebiten.FilterDefault)
 	handleFatal(err)
+	bollingerImage, err := ebiten.NewImage(view.MinutesInDay, int(minMax*100), ebiten.FilterDefault)
+	handleFatal(err)
 
 	return &DayBuffer{
-		Update:  true,
-		RSI:     rsiImage,
-		Candles: candlesImage,
-		Plot:    plotImage,
+		Update:    true,
+		RSI:       rsiImage,
+		Candles:   candlesImage,
+		Plot:      plotImage,
+		Bollinger: bollingerImage,
 	}
 }
 
@@ -83,20 +87,16 @@ func (g *Game) PlotDay(day int, screen *ebiten.Image) {
 	data := g.Model.GetQuoteDay(day)
 	cam := g.Screen.Camera
 
+	// update textures if needed
 	if b.Update {
-
 		data := g.Model.GetQuoteDay(day)
-
-		fmt.Printf("plot day %d rendered\n", day)
-
 		plots.Candles(data, b.Candles)
-
 		plots.RSI(14, data, b.RSI)
-
+		plots.Bollinger(27, data, b.Bollinger)
 		b.Update = false
 	}
 
-	// only update plot if moved, reduces cpu usage
+	// draw textures to buffer in on axis
 	if g.Screen.HasMoved || g.ForceRender {
 
 		// draw axis
@@ -104,24 +104,33 @@ func (g *Game) PlotDay(day int, screen *ebiten.Image) {
 		plots.Axis(g.Model.GetQuoteDay(day), b.Plot, g.Screen)
 
 		// draw candles
-		min, _ := data.GetRange()
-		bottomDelta := (min - cam.Bottom) * cam.ScaleY
-		op := ebiten.DrawImageOptions{}
-		op.GeoM.Scale(1, cam.ScaleY/100)
-		op.GeoM.Translate(0, bottomDelta)
-		b.Plot.DrawImage(b.Candles, &op)
+		if g.Options.ShowQuotes {
+			min, _ := data.GetRange()
+			bottomDelta := (min - cam.Bottom) * cam.ScaleY
+			op := ebiten.DrawImageOptions{}
+			op.GeoM.Scale(1, cam.ScaleY/100)
+			op.GeoM.Translate(0, bottomDelta)
+			b.Plot.DrawImage(b.Candles, &op)
+		}
 
 		// draw rsi bars
-		op = ebiten.DrawImageOptions{}
-		op.GeoM.Scale(3, 1)
-		b.Plot.DrawImage(b.RSI, &op)
+		if g.Options.ShowRSI {
+			op := ebiten.DrawImageOptions{}
+			op.GeoM.Scale(3, 1)
+			b.Plot.DrawImage(b.RSI, &op)
+		}
+
+		if g.Options.ShowBollinger {
+			min, _ := data.GetRange()
+			bottomDelta := (min - cam.Bottom) * cam.ScaleY
+			op := ebiten.DrawImageOptions{}
+			op.GeoM.Scale(1, cam.ScaleY/100)
+			op.GeoM.Translate(0, bottomDelta)
+			b.Plot.DrawImage(b.Bollinger, &op)
+		}
 
 		/*
 
-			if g.Options.ShowBollinger {
-				plots.Bollinger(27, g.Model.GetQuoteDay(day), g.Plot, g.Screen)
-				plotToBuffer(g)
-			}
 
 			if g.Options.ShowQuotes {
 				plots.Candles(g.Model.GetQuoteDay(day), g.Plot, g.Screen)
@@ -174,7 +183,14 @@ func (g *Game) Update(screen *ebiten.Image) error {
 	ly := math.Floor(g.Screen.Camera.Bottom)
 	for ly < g.Screen.Camera.Top {
 		y := int((ly - g.Screen.Camera.Bottom) * g.Screen.Camera.ScaleY)
-		text.Draw(screen, fmt.Sprintf("%d", int(ly)), fonts.FaceHuge, 10, g.Screen.Window.H-y-10, color.RGBA{104, 109, 224, 150})
+		text.Draw(
+			screen,
+			fmt.Sprintf("%d", int(ly)),
+			fonts.FaceHuge,
+			10,
+			g.Screen.Window.H-y-10,
+			color.RGBA{104, 109, 224, 150},
+		)
 		ly += 1
 	}
 

@@ -1,19 +1,19 @@
 package plots
 
 import (
-	"image"
+	"github.com/hajimehoshi/ebiten"
 	"image/color"
 	"math"
 	"visim.muon.one/internal/indicators"
 	"visim.muon.one/internal/stocks"
-	"visim.muon.one/internal/view"
 )
 
-func Bollinger(n int, data *stocks.MarketDay, plot *image.RGBA, screen *view.Screen) {
+func Bollinger(n int, data *stocks.MarketDay, plot *ebiten.Image) {
 
-	PlotX(func(x int) {
+	for x := range data.Quotes {
 		quotes := data.GetQuotesInRange(x-n, x)
 		q := data.GetQuote(x)
+		min, _ := data.GetRange()
 
 		if quotes == nil || q == nil {
 			return
@@ -22,9 +22,9 @@ func Bollinger(n int, data *stocks.MarketDay, plot *image.RGBA, screen *view.Scr
 		std := indicators.StandardDeviation(quotes)
 		sma := indicators.SimpleMeanAverage(quotes)
 
-		y := (sma - screen.Camera.Bottom) * screen.Camera.ScaleY
-		ub := (sma + 2*std - screen.Camera.Bottom) * screen.Camera.ScaleY
-		lb := (sma - 2*std - screen.Camera.Bottom) * screen.Camera.ScaleY
+		y := int((sma - min) * 100)
+		ub := int((sma + 2*std - min) * 100)
+		lb := int((sma - 2*std - min) * 100)
 
 		buy := math.Min(math.Max(q.Close-(sma+std), 0)/(2*std), 1)
 		sell := math.Min(math.Max((sma-std)-q.Close, 0)/(2*std), 1)
@@ -37,11 +37,10 @@ func Bollinger(n int, data *stocks.MarketDay, plot *image.RGBA, screen *view.Scr
 		}
 
 		for i := lb; i < ub; i++ {
-			for j := 0; j < screen.Camera.ScaleX; j++ {
-				plot.Set((x-screen.Camera.X)*screen.Camera.ScaleX+j, int(i), c)
-			}
+			plot.Set(x, i, c)
 		}
 
-		plot.Set((x-screen.Camera.X)*screen.Camera.ScaleX+screen.Camera.ScaleX/2, int(y), color.RGBA{126, 214, 223, 255})
-	}, screen)
+		plot.Set(x, y, color.RGBA{R: 126, G: 214, B: 223, A: 255})
+	}
+
 }
