@@ -18,12 +18,11 @@ import (
 )
 
 type Game struct {
-	Model       *stocks.Model
-	Screen      *view.Screen
-	Plot        *image.RGBA
-	Buffers     Buffers
-	ForceRender bool
-	Options     inputs.Options
+	Model   *stocks.Model
+	Screen  *view.Screen
+	Plot    *image.RGBA
+	Buffers Buffers
+	Options inputs.Options
 }
 
 type DayBuffer struct {
@@ -100,43 +99,41 @@ func (g *Game) PlotDay(day int) {
 	}
 
 	// draw textures to buffer in on axis
-	if g.Screen.HasMoved || g.ForceRender {
 
-		min, _ := data.GetRange()
-		bottomDelta := (min - cam.Bottom) * cam.ScaleY
+	min, _ := data.GetRange()
+	bottomDelta := (min - cam.Bottom) * cam.ScaleY
 
-		// draw axis
-		b.Plot.Clear()
-		plots.Axis(g.Model.GetQuoteDay(day), b.Plot, g.Screen)
+	// draw axis
+	b.Plot.Clear()
+	plots.Axis(g.Model.GetQuoteDay(day), b.Plot, g.Screen)
 
-		if g.Options.ShowBollinger {
-			op := ebiten.DrawImageOptions{}
-			op.GeoM.Scale(3, cam.ScaleY/100)
-			op.GeoM.Translate(0, bottomDelta)
-			b.Plot.DrawImage(b.Bollinger, &op)
-		}
+	if g.Options.ShowBollinger {
+		op := ebiten.DrawImageOptions{}
+		op.GeoM.Scale(3, cam.ScaleY/100)
+		op.GeoM.Translate(0, bottomDelta)
+		b.Plot.DrawImage(b.Bollinger, &op)
+	}
 
-		// draw candles
-		if g.Options.ShowQuotes {
-			op := ebiten.DrawImageOptions{}
-			op.GeoM.Scale(1, cam.ScaleY/100)
-			op.GeoM.Translate(0, bottomDelta)
-			b.Plot.DrawImage(b.Candles, &op)
-		}
+	// draw candles
+	if g.Options.ShowQuotes {
+		op := ebiten.DrawImageOptions{}
+		op.GeoM.Scale(1, cam.ScaleY/100)
+		op.GeoM.Translate(0, bottomDelta)
+		b.Plot.DrawImage(b.Candles, &op)
+	}
 
-		// draw rsi bars
-		if g.Options.ShowRSI {
-			op := ebiten.DrawImageOptions{}
-			op.GeoM.Scale(3, 1)
-			b.Plot.DrawImage(b.RSI, &op)
-		}
+	// draw rsi bars
+	if g.Options.ShowRSI {
+		op := ebiten.DrawImageOptions{}
+		op.GeoM.Scale(3, 1)
+		b.Plot.DrawImage(b.RSI, &op)
+	}
 
-		if g.Options.ShowSupportResistance {
-			op := ebiten.DrawImageOptions{}
-			op.GeoM.Scale(3, cam.ScaleY/100)
-			op.GeoM.Translate(0, bottomDelta)
-			b.Plot.DrawImage(b.SR, &op)
-		}
+	if g.Options.ShowSupportResistance {
+		op := ebiten.DrawImageOptions{}
+		op.GeoM.Scale(3, cam.ScaleY/100)
+		op.GeoM.Translate(0, bottomDelta)
+		b.Plot.DrawImage(b.SR, &op)
 	}
 
 	// draw plot
@@ -151,7 +148,7 @@ func (g *Game) PlotDay(day int) {
 func (g *Game) Update(screen *ebiten.Image) error {
 
 	inputs.HandleCamera(g.Screen)
-	g.ForceRender = inputs.HandlePlot(&g.Options) || g.ForceRender
+	inputs.HandlePlot(&g.Options)
 
 	g.Screen.AutoYAxis(g.Model)
 
@@ -167,7 +164,6 @@ func (g *Game) Update(screen *ebiten.Image) error {
 	}
 
 	screen.DrawImage(g.Buffers.Plot, nil)
-	g.ForceRender = false
 
 	debug := fmt.Sprintf("%d\n%d-%d", int(ebiten.CurrentFPS()), v0, v1)
 
@@ -262,7 +258,6 @@ func main() {
 			ShowRSI:       true,
 			ShowQuotes:    true,
 		},
-		ForceRender: true,
 	}
 
 	ebiten.SetWindowSize(game.Screen.Window.W, game.Screen.Window.H)
