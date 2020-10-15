@@ -1,21 +1,31 @@
 package stocks
 
-func (m *MarketDay) GetQuote(i int) *Quote {
-	if i < 0 || i >= len(m.Quotes) {
+func (m *MarketDay) GetQuote(minute int) *Quote {
+	if m == nil || minute < 0 || minute >= len(m.Quotes) {
 		return nil
 	}
-	return &m.Quotes[i]
+	return &m.Quotes[minute]
 }
 
-func (m *MarketDay) GetQuotesInRange(a int, b int) []Quote {
-	if a < 0 || b >= len(m.Quotes) {
+func (m *MarketDay) GetQuotesInRange(lb int, ub int) []Quote {
+	lb = GetMinute(lb)
+	ub = GetMinute(ub)
+	if lb < 0 || ub >= len(m.Quotes) || ub < lb {
 		return nil
 	}
-	return m.Quotes[a:b]
+	return m.Quotes[lb:ub]
 }
 
-func (m *Model) GetQuoteDay(i int) *MarketDay {
-	return m.Data[i]
+func (m *Model) GetQuoteDay(day int) *MarketDay {
+	if day < 0 || day >= len(m.Data) {
+		return nil
+	}
+	return m.Data[day]
+}
+
+func (m *Model) GetQuote(x int) *Quote {
+	day, minute := GetDay(x), GetMinute(x)
+	return m.GetQuoteDay(day).GetQuote(minute)
 }
 
 func (m *MarketDay) update() {
@@ -39,4 +49,14 @@ func (m *MarketDay) GetRange() (float64, float64) {
 		m.update()
 	}
 	return m.min, m.max
+}
+
+const MinutesInDay = 6*60 + 30
+
+func GetDay(x int) int {
+	return x / (MinutesInDay)
+}
+
+func GetMinute(x int) int {
+	return x % MinutesInDay
 }

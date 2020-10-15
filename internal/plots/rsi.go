@@ -12,10 +12,15 @@ import (
 	"visim.muon.one/internal/view"
 )
 
-func TooltipRSI(i int, n int, quotes []stocks.Quote, buffer *ebiten.Image, screen *view.Screen) {
-	rsi := indicators.RelativeStrengthIndex(quotes[i-n : i])
+func TooltipRSI(i int, n int, m *stocks.Model, buffer *ebiten.Image, screen *view.Screen) {
+	day := stocks.GetDay(i)
+	quotes := m.GetQuoteDay(day).GetQuotesInRange(i-n, i)
+	if quotes == nil {
+		return
+	}
+	rsi := indicators.RelativeStrengthIndex(quotes)
 	y := screen.Window.H - int(rsi*100)
-	x := (i-screen.Camera.X)*int(screen.Camera.ScaleX) + paddingLeft
+	x := (i-screen.Camera.X)*screen.Camera.ScaleX + paddingLeft
 	fonts.Background(x-3, y+3, 54, 13, color.RGBA{48, 51, 107, 200}, buffer)
 	text.Draw(buffer, fmt.Sprintf("RSI: %d", int(rsi*100)), fonts.FaceNormal, x, y, color.White)
 }

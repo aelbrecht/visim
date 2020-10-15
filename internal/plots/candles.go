@@ -12,9 +12,12 @@ import (
 	"visim.muon.one/internal/view"
 )
 
-func TooltipCandle(i int, quotes []stocks.Quote, buffer *ebiten.Image, screen *view.Screen) {
-	q := quotes[i]
-	x := (i-screen.Camera.X)*int(screen.Camera.ScaleX) + paddingLeft
+func TooltipCandle(i int, m *stocks.Model, buffer *ebiten.Image, screen *view.Screen) {
+	q := m.GetQuote(i)
+	if q == nil {
+		return
+	}
+	x := (i-screen.Camera.X)*screen.Camera.ScaleX + paddingLeft
 	y0 := screen.Window.H - int((q.High-screen.Camera.Bottom)*screen.Camera.ScaleY)
 	fonts.Background(x-3, y0+13*6+6, 120, 16*6, color.RGBA{48, 51, 107, 200}, buffer)
 	date := time.Unix(q.Time, 0).In(time.FixedZone("GMT", 0))

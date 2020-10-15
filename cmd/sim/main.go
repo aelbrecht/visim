@@ -43,20 +43,26 @@ type Buffers struct {
 	Tooltip *ebiten.Image
 }
 
+var (
+	RSIRange       = 14
+	BollingerRange = 27
+	SRRange        = 20
+)
+
 func makeDayBuffer(data *stocks.MarketDay, screen *view.Screen) *DayBuffer {
 
 	min, max := data.GetRange()
 	minMax := max - min
 
-	rsiImage, err := ebiten.NewImage(view.MinutesInDay, 100, ebiten.FilterDefault)
+	rsiImage, err := ebiten.NewImage(stocks.MinutesInDay, 100, ebiten.FilterDefault)
 	handleFatal(err)
 	plotImage, err := ebiten.NewImage(screen.Window.W, screen.Window.H, ebiten.FilterDefault)
 	handleFatal(err)
-	candlesImage, err := ebiten.NewImage(view.MinutesInDay*3, int(minMax*100), ebiten.FilterDefault)
+	candlesImage, err := ebiten.NewImage(stocks.MinutesInDay*3, int(minMax*100), ebiten.FilterDefault)
 	handleFatal(err)
-	bollingerImage, err := ebiten.NewImage(view.MinutesInDay, int(minMax*100), ebiten.FilterDefault)
+	bollingerImage, err := ebiten.NewImage(stocks.MinutesInDay, int(minMax*100), ebiten.FilterDefault)
 	handleFatal(err)
-	srImage, err := ebiten.NewImage(view.MinutesInDay, int(minMax*100), ebiten.FilterDefault)
+	srImage, err := ebiten.NewImage(stocks.MinutesInDay, int(minMax*100), ebiten.FilterDefault)
 	handleFatal(err)
 
 	return &DayBuffer{
@@ -83,9 +89,9 @@ func (g *Game) PlotDay(day int, screen *ebiten.Image) {
 	if b.Update {
 		data := g.Model.GetQuoteDay(day)
 		plots.Candles(data, b.Candles)
-		plots.RSI(14, data, b.RSI)
-		plots.Bollinger(27, data, b.Bollinger)
-		plots.SR(5, data, b.SR)
+		plots.RSI(RSIRange, data, b.RSI)
+		plots.Bollinger(BollingerRange, data, b.Bollinger)
+		plots.SR(SRRange, data, b.SR)
 		b.Update = false
 	}
 
@@ -133,7 +139,7 @@ func (g *Game) PlotDay(day int, screen *ebiten.Image) {
 	op := ebiten.DrawImageOptions{}
 	op.GeoM.Scale(1, -1)
 	op.GeoM.Translate(0, float64(g.Screen.Window.H))
-	op.GeoM.Translate(float64(view.MinutesInDay*day*cam.ScaleX), 0)
+	op.GeoM.Translate(float64(stocks.MinutesInDay*day*cam.ScaleX), 0)
 	op.GeoM.Translate(-float64(cam.X*cam.ScaleX), 0)
 	g.Buffers.Plot.DrawImage(b.Plot, &op)
 }
@@ -157,13 +163,9 @@ func (g *Game) Update(screen *ebiten.Image) error {
 
 	debug := fmt.Sprintf("%d", int(ebiten.CurrentFPS()))
 
-	quoteIndex := g.Screen.Camera.X + g.Screen.Cursor.X/int(g.Screen.Camera.ScaleX)
-	if quoteIndex > 0 && quoteIndex < len(g.Model.Data[0].Quotes) {
-		plots.TooltipCandle(quoteIndex, g.Model.Data[0].Quotes, g.Buffers.Tooltip, g.Screen)
-		if quoteIndex > 20 {
-			plots.TooltipRSI(quoteIndex, 20, g.Model.Data[0].Quotes, g.Buffers.Tooltip, g.Screen)
-		}
-	}
+	quoteIndex := g.Screen.Camera.X + g.Screen.Cursor.X/g.Screen.Camera.ScaleX
+	plots.TooltipCandle(quoteIndex, g.Model, g.Buffers.Tooltip, g.Screen)
+	plots.TooltipRSI(quoteIndex, RSIRange, g.Model, g.Buffers.Tooltip, g.Screen)
 
 	// draw text for plot
 	ly := math.Floor(g.Screen.Camera.Bottom)

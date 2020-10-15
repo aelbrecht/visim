@@ -15,7 +15,7 @@ func Axis(m *stocks.MarketDay, plot *ebiten.Image, screen *view.Screen) {
 
 	if lineX == nil || lineY == nil {
 		c := color.RGBA{R: 104, G: 109, B: 224, A: 25}
-		lineX, _ = ebiten.NewImage(view.MinutesInDay, 1, ebiten.FilterDefault)
+		lineX, _ = ebiten.NewImage(stocks.MinutesInDay, 1, ebiten.FilterDefault)
 		lineX.Fill(c)
 		lineY, _ = ebiten.NewImage(1, screen.Window.H, ebiten.FilterDefault)
 		lineY.Fill(c)
@@ -43,7 +43,7 @@ func Axis(m *stocks.MarketDay, plot *ebiten.Image, screen *view.Screen) {
 	}
 
 	lx := 0
-	for lx < view.MinutesInDay*screen.Camera.ScaleX {
+	for lx < stocks.MinutesInDay*screen.Camera.ScaleX {
 		op := ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(lx), 0)
 		op.ColorM.Scale(1, 1, 1, 0.5)
