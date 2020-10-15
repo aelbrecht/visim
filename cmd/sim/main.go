@@ -75,15 +75,19 @@ func makeDayBuffer(data *stocks.MarketDay, screen *view.Screen) *DayBuffer {
 	}
 }
 
-func (g *Game) PlotDay(day int, screen *ebiten.Image) {
+func (g *Game) PlotDay(day int) {
 
-	if g.Buffers.Day[day] == nil {
-		g.Buffers.Day[day] = makeDayBuffer(g.Model.GetQuoteDay(day), g.Screen)
+	data := g.Model.GetQuoteDay(day)
+	if data == nil {
+		return
 	}
 
-	b := g.Buffers.Day[day]
-	data := g.Model.GetQuoteDay(day)
 	cam := g.Screen.Camera
+
+	if g.Buffers.Day[day] == nil {
+		g.Buffers.Day[day] = makeDayBuffer(data, g.Screen)
+	}
+	b := g.Buffers.Day[day]
 
 	// update textures if needed
 	if b.Update {
@@ -156,12 +160,16 @@ func (g *Game) Update(screen *ebiten.Image) error {
 
 	screen.Fill(color.RGBA{R: 19, G: 15, B: 64, A: 255})
 	g.Buffers.Plot.Clear()
-	g.PlotDay(0, screen)
-	g.PlotDay(1, screen)
+
+	v0, v1 := g.Screen.VisibleDays()
+	for i := v0; i <= v1; i++ {
+		g.PlotDay(i)
+	}
+
 	screen.DrawImage(g.Buffers.Plot, nil)
 	g.ForceRender = false
 
-	debug := fmt.Sprintf("%d", int(ebiten.CurrentFPS()))
+	debug := fmt.Sprintf("%d\n%d-%d", int(ebiten.CurrentFPS()), v0, v1)
 
 	quoteIndex := g.Screen.Camera.X + g.Screen.Cursor.X/g.Screen.Camera.ScaleX
 	plots.TooltipCandle(quoteIndex, g.Model, g.Buffers.Tooltip, g.Screen)

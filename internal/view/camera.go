@@ -29,6 +29,12 @@ type Screen struct {
 	HasMoved bool
 }
 
+func (screen *Screen) VisibleDays() (int, int) {
+	x0 := screen.Camera.X
+	x1 := screen.Camera.X + screen.Window.W/screen.Camera.ScaleX
+	return stocks.GetDay(x0), stocks.GetDay(x1)
+}
+
 func (screen *Screen) AutoYAxis(m *stocks.Model) {
 
 	x0 := screen.Camera.X

@@ -10,7 +10,7 @@ func (m *MarketDay) GetQuote(minute int) *Quote {
 func (m *MarketDay) GetQuotesInRange(lb int, ub int) []Quote {
 	lb = GetMinute(lb)
 	ub = GetMinute(ub)
-	if lb < 0 || ub >= len(m.Quotes) || ub < lb {
+	if m == nil || lb < 0 || ub >= len(m.Quotes) || ub < lb {
 		return nil
 	}
 	return m.Quotes[lb:ub]
