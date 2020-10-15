@@ -29,6 +29,7 @@ type Game struct {
 type DayBuffer struct {
 	Update    bool
 	RSI       *ebiten.Image
+	SR        *ebiten.Image
 	Bollinger *ebiten.Image
 	Candles   *ebiten.Image
 	Plot      *ebiten.Image
@@ -55,6 +56,8 @@ func makeDayBuffer(data *stocks.MarketDay, screen *view.Screen) *DayBuffer {
 	handleFatal(err)
 	bollingerImage, err := ebiten.NewImage(view.MinutesInDay, int(minMax*100), ebiten.FilterDefault)
 	handleFatal(err)
+	srImage, err := ebiten.NewImage(view.MinutesInDay, int(minMax*100), ebiten.FilterDefault)
+	handleFatal(err)
 
 	return &DayBuffer{
 		Update:    true,
@@ -62,19 +65,8 @@ func makeDayBuffer(data *stocks.MarketDay, screen *view.Screen) *DayBuffer {
 		Candles:   candlesImage,
 		Plot:      plotImage,
 		Bollinger: bollingerImage,
+		SR:        srImage,
 	}
-}
-
-func clearPlot(plot *image.RGBA) {
-	for i := 0; i < len(plot.Pix)/4; i++ {
-		plot.Pix[i*4+3] = 0
-	}
-}
-
-func plotToBuffer(g *Game) {
-	g.Buffers.Draw.ReplacePixels(g.Plot.Pix)
-	g.Buffers.Plot.DrawImage(g.Buffers.Draw, nil)
-	clearPlot(g.Plot)
 }
 
 func (g *Game) PlotDay(day int, screen *ebiten.Image) {
@@ -93,20 +85,29 @@ func (g *Game) PlotDay(day int, screen *ebiten.Image) {
 		plots.Candles(data, b.Candles)
 		plots.RSI(14, data, b.RSI)
 		plots.Bollinger(27, data, b.Bollinger)
+		plots.SR(5, data, b.SR)
 		b.Update = false
 	}
 
 	// draw textures to buffer in on axis
 	if g.Screen.HasMoved || g.ForceRender {
 
+		min, _ := data.GetRange()
+		bottomDelta := (min - cam.Bottom) * cam.ScaleY
+
 		// draw axis
 		b.Plot.Clear()
 		plots.Axis(g.Model.GetQuoteDay(day), b.Plot, g.Screen)
 
+		if g.Options.ShowBollinger {
+			op := ebiten.DrawImageOptions{}
+			op.GeoM.Scale(3, cam.ScaleY/100)
+			op.GeoM.Translate(0, bottomDelta)
+			b.Plot.DrawImage(b.Bollinger, &op)
+		}
+
 		// draw candles
 		if g.Options.ShowQuotes {
-			min, _ := data.GetRange()
-			bottomDelta := (min - cam.Bottom) * cam.ScaleY
 			op := ebiten.DrawImageOptions{}
 			op.GeoM.Scale(1, cam.ScaleY/100)
 			op.GeoM.Translate(0, bottomDelta)
@@ -120,27 +121,12 @@ func (g *Game) PlotDay(day int, screen *ebiten.Image) {
 			b.Plot.DrawImage(b.RSI, &op)
 		}
 
-		if g.Options.ShowBollinger {
-			min, _ := data.GetRange()
-			bottomDelta := (min - cam.Bottom) * cam.ScaleY
+		if g.Options.ShowSupportResistance {
 			op := ebiten.DrawImageOptions{}
-			op.GeoM.Scale(1, cam.ScaleY/100)
+			op.GeoM.Scale(3, cam.ScaleY/100)
 			op.GeoM.Translate(0, bottomDelta)
-			b.Plot.DrawImage(b.Bollinger, &op)
+			b.Plot.DrawImage(b.SR, &op)
 		}
-
-		/*
-
-
-			if g.Options.ShowQuotes {
-				plots.Candles(g.Model.GetQuoteDay(day), g.Plot, g.Screen)
-				plotToBuffer(g)
-			}
-
-			if g.Options.ShowSupportResistance {
-				plots.Resistance(5, g.Model.GetQuoteDay(day), g.Plot, g.Screen)
-				plotToBuffer(g)
-			}*/
 	}
 
 	// draw plot

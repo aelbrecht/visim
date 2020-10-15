@@ -16,7 +16,7 @@ func Bollinger(n int, data *stocks.MarketDay, plot *ebiten.Image) {
 		min, _ := data.GetRange()
 
 		if quotes == nil || q == nil {
-			return
+			continue
 		}
 
 		std := indicators.StandardDeviation(quotes)
