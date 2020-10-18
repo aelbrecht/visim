@@ -11,7 +11,7 @@ import (
 var lineX *ebiten.Image
 var lineY *ebiten.Image
 
-func Axis(m *stocks.MarketDay, plot *ebiten.Image, screen *view.Screen) {
+func Axis(plot *ebiten.Image, screen *view.Screen) {
 
 	if lineX == nil || lineY == nil {
 		c := color.RGBA{R: 104, G: 109, B: 224, A: 25}
@@ -39,7 +39,7 @@ func Axis(m *stocks.MarketDay, plot *ebiten.Image, screen *view.Screen) {
 		op.GeoM.Scale(3, 1)
 		op.ColorM.Scale(1, 1, 1, 0.5)
 		_ = plot.DrawImage(lineX, &op)
-		ly += 0.1
+		ly += 0.05
 	}
 
 	lx := 0

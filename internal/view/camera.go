@@ -7,6 +7,7 @@ import (
 
 type Camera struct {
 	X, Y    int
+	XF      float64
 	ScaleX  int
 	ScaleXF float64
 	ScaleY  float64

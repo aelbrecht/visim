@@ -105,11 +105,11 @@ func (g *Game) PlotDay(day int) {
 
 	// draw axis
 	b.Plot.Clear()
-	plots.Axis(g.Model.GetQuoteDay(day), b.Plot, g.Screen)
+	plots.Axis(b.Plot, g.Screen)
 
 	if g.Options.ShowBollinger {
 		op := ebiten.DrawImageOptions{}
-		op.GeoM.Scale(3, cam.ScaleY/100)
+		op.GeoM.Scale(cam.ScaleXF, cam.ScaleY/100)
 		op.GeoM.Translate(0, bottomDelta)
 		b.Plot.DrawImage(b.Bollinger, &op)
 	}
@@ -117,7 +117,7 @@ func (g *Game) PlotDay(day int) {
 	// draw candles
 	if g.Options.ShowQuotes {
 		op := ebiten.DrawImageOptions{}
-		op.GeoM.Scale(1, cam.ScaleY/100)
+		op.GeoM.Scale(cam.ScaleXF/3, cam.ScaleY/100)
 		op.GeoM.Translate(0, bottomDelta)
 		b.Plot.DrawImage(b.Candles, &op)
 	}
@@ -125,13 +125,13 @@ func (g *Game) PlotDay(day int) {
 	// draw rsi bars
 	if g.Options.ShowRSI {
 		op := ebiten.DrawImageOptions{}
-		op.GeoM.Scale(3, 1)
+		op.GeoM.Scale(cam.ScaleXF, 1)
 		b.Plot.DrawImage(b.RSI, &op)
 	}
 
 	if g.Options.ShowSupportResistance {
 		op := ebiten.DrawImageOptions{}
-		op.GeoM.Scale(3, cam.ScaleY/100)
+		op.GeoM.Scale(cam.ScaleXF, cam.ScaleY/100)
 		op.GeoM.Translate(0, bottomDelta)
 		b.Plot.DrawImage(b.SR, &op)
 	}
@@ -140,7 +140,7 @@ func (g *Game) PlotDay(day int) {
 	op := ebiten.DrawImageOptions{}
 	op.GeoM.Scale(1, -1)
 	op.GeoM.Translate(0, float64(g.Screen.Window.H))
-	op.GeoM.Translate(float64(stocks.MinutesInDay*day*cam.ScaleX), 0)
+	op.GeoM.Translate(float64(stocks.MinutesInDay*day)*cam.ScaleXF, 0)
 	op.GeoM.Translate(-float64(cam.X*cam.ScaleX), 0)
 	g.Buffers.Plot.DrawImage(b.Plot, &op)
 }
@@ -240,7 +240,7 @@ func main() {
 			},
 		},
 		Screen: &view.Screen{
-			Camera: &view.Camera{ScaleX: 3},
+			Camera: &view.Camera{ScaleX: 3, ScaleXF: 3},
 			Window: view.Window{w, h},
 		},
 		Plot: image.NewRGBA(image.Rectangle{
