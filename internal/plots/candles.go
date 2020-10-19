@@ -65,11 +65,11 @@ func Candles(data *stocks.MarketDay, plot *ebiten.Image) {
 			t = candleYellow
 		}
 
-		lineHeight := lb - ub
+		lineHeight := ub - lb
 
 		op := ebiten.DrawImageOptions{}
 		op.GeoM.Scale(1, lineHeight)
-		op.GeoM.Translate(float64(x+2), yo)
+		op.GeoM.Translate(float64(x+2), lb)
 		plot.DrawImage(t, &op)
 
 		barHeight := yc - yo
@@ -83,7 +83,7 @@ func Candles(data *stocks.MarketDay, plot *ebiten.Image) {
 
 		op = ebiten.DrawImageOptions{}
 		op.GeoM.Scale(3, barHeight)
-		op.GeoM.Translate(float64(x+1), lb)
+		op.GeoM.Translate(float64(x+1), yo)
 		plot.DrawImage(t, &op)
 
 	}

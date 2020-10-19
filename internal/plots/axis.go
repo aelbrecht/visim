@@ -41,7 +41,7 @@ func Axis(plot *ebiten.Image, screen *view.Screen) {
 		op.GeoM.Scale(gs, 1)
 		op.ColorM.Scale(1, 1, 1, 0.5)
 		_ = plot.DrawImage(lineX, &op)
-		ly += 0.05
+		ly += 0.1
 	}
 
 	lx := 0.0
