@@ -64,6 +64,11 @@ func (screen *Screen) AutoYAxis(m *stocks.Model) {
 	max += minMaxDelta / 10
 	minMaxDelta = max - min
 
+	if min > 999999999 {
+		min = 0
+		max = 10
+	}
+
 	for minMaxDelta < 2 {
 		min -= 0.1
 		max += 0.1
