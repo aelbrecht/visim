@@ -6,13 +6,14 @@ import (
 )
 
 type Camera struct {
-	X, Y    int
-	XF      float64
-	ScaleX  int
-	ScaleXF float64
-	ScaleY  float64
-	Top     float64
-	Bottom  float64
+	X, Y     int
+	XF       float64
+	ScaleX   int
+	ScaleXF  float64
+	ScaleY   float64
+	Top      float64
+	Bottom   float64
+	GridSize int
 }
 
 type Window struct {
@@ -39,7 +40,7 @@ func (screen *Screen) VisibleDays() (int, int) {
 func (screen *Screen) AutoYAxis(m *stocks.Model) {
 
 	x0 := screen.Camera.X
-	x1 := screen.Camera.X + screen.Window.W/3
+	x1 := screen.Camera.X + int(float64(screen.Window.W)/screen.Camera.ScaleXF)
 
 	min := math.MaxFloat64
 	max := 0.0
@@ -63,9 +64,12 @@ func (screen *Screen) AutoYAxis(m *stocks.Model) {
 	max += minMaxDelta / 10
 	minMaxDelta = max - min
 
-	if minMaxDelta < 0.01 {
-		minMaxDelta = 0.01
+	for minMaxDelta < 2 {
+		min -= 0.1
+		max += 0.1
+		minMaxDelta = max - min
 	}
+
 	screen.Camera.ScaleY = float64(screen.Window.H) / minMaxDelta
 	screen.Camera.Top = max
 	screen.Camera.Bottom = min

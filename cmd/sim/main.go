@@ -55,9 +55,9 @@ func makeDayBuffer(data *stocks.MarketDay, screen *view.Screen) *DayBuffer {
 
 	rsiImage, err := ebiten.NewImage(stocks.MinutesInDay, 100, ebiten.FilterDefault)
 	handleFatal(err)
-	plotImage, err := ebiten.NewImage(screen.Window.W, screen.Window.H, ebiten.FilterDefault)
+	plotImage, err := ebiten.NewImage(stocks.MinutesInDay*screen.Camera.GridSize, screen.Window.H, ebiten.FilterDefault)
 	handleFatal(err)
-	candlesImage, err := ebiten.NewImage(stocks.MinutesInDay*3, int(minMax*100), ebiten.FilterDefault)
+	candlesImage, err := ebiten.NewImage(stocks.MinutesInDay*screen.Camera.GridSize, int(minMax*100), ebiten.FilterDefault)
 	handleFatal(err)
 	bollingerImage, err := ebiten.NewImage(stocks.MinutesInDay, int(minMax*100), ebiten.FilterDefault)
 	handleFatal(err)
@@ -102,6 +102,7 @@ func (g *Game) PlotDay(day int) {
 
 	min, _ := data.GetRange()
 	bottomDelta := (min - cam.Bottom) * cam.ScaleY
+	gs := float64(cam.GridSize)
 
 	// draw axis
 	b.Plot.Clear()
@@ -109,7 +110,7 @@ func (g *Game) PlotDay(day int) {
 
 	if g.Options.ShowBollinger {
 		op := ebiten.DrawImageOptions{}
-		op.GeoM.Scale(cam.ScaleXF, cam.ScaleY/100)
+		op.GeoM.Scale(gs, cam.ScaleY/100)
 		op.GeoM.Translate(0, bottomDelta)
 		b.Plot.DrawImage(b.Bollinger, &op)
 	}
@@ -117,7 +118,7 @@ func (g *Game) PlotDay(day int) {
 	// draw candles
 	if g.Options.ShowQuotes {
 		op := ebiten.DrawImageOptions{}
-		op.GeoM.Scale(cam.ScaleXF/3, cam.ScaleY/100)
+		op.GeoM.Scale(gs/5, cam.ScaleY/100)
 		op.GeoM.Translate(0, bottomDelta)
 		b.Plot.DrawImage(b.Candles, &op)
 	}
@@ -125,13 +126,13 @@ func (g *Game) PlotDay(day int) {
 	// draw rsi bars
 	if g.Options.ShowRSI {
 		op := ebiten.DrawImageOptions{}
-		op.GeoM.Scale(cam.ScaleXF, 1)
+		op.GeoM.Scale(gs, 1)
 		b.Plot.DrawImage(b.RSI, &op)
 	}
 
 	if g.Options.ShowSupportResistance {
 		op := ebiten.DrawImageOptions{}
-		op.GeoM.Scale(cam.ScaleXF, cam.ScaleY/100)
+		op.GeoM.Scale(gs, cam.ScaleY/100)
 		op.GeoM.Translate(0, bottomDelta)
 		b.Plot.DrawImage(b.SR, &op)
 	}
@@ -140,8 +141,9 @@ func (g *Game) PlotDay(day int) {
 	op := ebiten.DrawImageOptions{}
 	op.GeoM.Scale(1, -1)
 	op.GeoM.Translate(0, float64(g.Screen.Window.H))
+	op.GeoM.Scale(cam.ScaleXF/gs, 1)
 	op.GeoM.Translate(float64(stocks.MinutesInDay*day)*cam.ScaleXF, 0)
-	op.GeoM.Translate(-float64(cam.X*cam.ScaleX), 0)
+	op.GeoM.Translate(-float64(cam.X)*cam.ScaleXF, 0)
 	g.Buffers.Plot.DrawImage(b.Plot, &op)
 }
 
@@ -167,7 +169,7 @@ func (g *Game) Update(screen *ebiten.Image) error {
 
 	debug := fmt.Sprintf("%d\n%d-%d", int(ebiten.CurrentFPS()), v0, v1)
 
-	quoteIndex := g.Screen.Camera.X + g.Screen.Cursor.X/g.Screen.Camera.ScaleX
+	quoteIndex := g.Screen.Camera.X + int(float64(g.Screen.Cursor.X)/g.Screen.Camera.ScaleXF)
 	plots.TooltipCandle(quoteIndex, g.Model, g.Buffers.Tooltip, g.Screen)
 	plots.TooltipRSI(quoteIndex, RSIRange, g.Model, g.Buffers.Tooltip, g.Screen)
 
@@ -240,7 +242,7 @@ func main() {
 			},
 		},
 		Screen: &view.Screen{
-			Camera: &view.Camera{ScaleX: 3, ScaleXF: 3},
+			Camera: &view.Camera{ScaleX: 5, ScaleXF: 5, GridSize: 5, Y: 200},
 			Window: view.Window{w, h},
 		},
 		Plot: image.NewRGBA(image.Rectangle{

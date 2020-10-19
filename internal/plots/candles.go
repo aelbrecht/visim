@@ -5,6 +5,7 @@ import (
 	"github.com/hajimehoshi/ebiten"
 	"github.com/hajimehoshi/ebiten/text"
 	"image/color"
+	"math"
 	"strings"
 	"time"
 	"visim.muon.one/internal/fonts"
@@ -12,12 +13,25 @@ import (
 	"visim.muon.one/internal/view"
 )
 
+var candleGreen *ebiten.Image
+var candleRed *ebiten.Image
+var candleYellow *ebiten.Image
+
+func init() {
+	candleGreen, _ = ebiten.NewImage(1, 1, ebiten.FilterDefault)
+	candleGreen.Fill(color.RGBA{R: 235, G: 77, B: 75, A: 255})
+	candleRed, _ = ebiten.NewImage(1, 1, ebiten.FilterDefault)
+	candleRed.Fill(color.RGBA{R: 106, G: 176, B: 76, A: 255})
+	candleYellow, _ = ebiten.NewImage(1, 1, ebiten.FilterDefault)
+	candleYellow.Fill(color.RGBA{R: 249, G: 202, B: 36, A: 255})
+}
+
 func TooltipCandle(i int, m *stocks.Model, buffer *ebiten.Image, screen *view.Screen) {
 	q := m.GetQuote(i)
 	if q == nil {
 		return
 	}
-	x := (i-screen.Camera.X)*screen.Camera.ScaleX + paddingLeft
+	x := int(float64(i-screen.Camera.X)*screen.Camera.ScaleXF) + paddingLeft
 	y0 := screen.Window.H - int((q.High-screen.Camera.Bottom)*screen.Camera.ScaleY)
 	fonts.Background(x-3, y0+13*6+6, 120, 16*6, color.RGBA{48, 51, 107, 200}, buffer)
 	date := time.Unix(q.Time, 0).In(time.FixedZone("GMT", 0))
@@ -35,29 +49,42 @@ func Candles(data *stocks.MarketDay, plot *ebiten.Image) {
 
 	for i, q := range data.Quotes {
 
-		x := i * 3
+		x := i * 5
 
-		lb := int((q.Low - min) * 100)
-		ub := int((q.High - min) * 100)
-		yo := int((q.Open - min) * 100)
-		yc := int((q.Close - min) * 100)
+		lb := (q.Low - min) * 100
+		ub := (q.High - min) * 100
+		yo := (q.Open - min) * 100
+		yc := (q.Close - min) * 100
 
-		c := color.RGBA{R: 249, G: 202, B: 36, A: 255}
+		var t *ebiten.Image
 		if q.Open < q.Close {
-			c = color.RGBA{R: 106, G: 176, B: 76, A: 255}
+			t = candleRed
 		} else if q.Open > q.Close {
-			c = color.RGBA{R: 235, G: 77, B: 75, A: 255}
+			t = candleGreen
+		} else {
+			t = candleYellow
 		}
 
-		for j := 0; j < 2; j++ {
-			plot.Set(x+j, yo, c)
+		lineHeight := lb - ub
+
+		op := ebiten.DrawImageOptions{}
+		op.GeoM.Scale(1, lineHeight)
+		op.GeoM.Translate(float64(x+2), yo)
+		plot.DrawImage(t, &op)
+
+		barHeight := yc - yo
+		if math.Abs(barHeight) < 1 {
+			if barHeight < 0 {
+				barHeight = -1
+			} else {
+				barHeight = 1
+			}
 		}
-		for j := 1; j < 3; j++ {
-			plot.Set(x+j, yc, c)
-		}
-		for j := lb; j < ub; j++ {
-			plot.Set(x+1, j, c)
-		}
+
+		op = ebiten.DrawImageOptions{}
+		op.GeoM.Scale(3, barHeight)
+		op.GeoM.Translate(float64(x+1), lb)
+		plot.DrawImage(t, &op)
 
 	}
 }

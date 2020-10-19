@@ -14,25 +14,22 @@ func HandleCamera(s *view.Screen) {
 
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 		if s.HasMoved {
-			if !ebiten.IsKeyPressed(ebiten.KeyShift) {
 				s.Camera.XF += float64(dx) / s.Camera.ScaleXF
-			} else {
 				s.Camera.Y -= dy
-			}
-			s.Camera.X = int(s.Camera.XF)
 			if s.Camera.Y < 0 {
 				s.Camera.Y = 0
-			} else if s.Camera.Y > 500 {
-				s.Camera.Y = 500
+			} else if s.Camera.Y > 1000 {
+				s.Camera.Y = 1000
 			}
 			sx := s.Camera.ScaleXF
-			s.Camera.ScaleXF = (float64(s.Camera.Y) / 50.0) + 3
+			s.Camera.ScaleXF = (float64(s.Camera.Y) / 50.0) + 1
 			if sx != s.Camera.ScaleXF {
 				w1 := float64(s.Window.W) / s.Camera.ScaleXF
 				w2 := float64(s.Window.W) / sx
 				dw := w2 - w1
-				s.Camera.X -= int(dw / 2)
+				s.Camera.XF += dw/2
 			}
+			s.Camera.X = int(s.Camera.XF)
 			s.Camera.ScaleX = int(sx)
 		}
 		s.HasMoved = true
