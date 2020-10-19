@@ -19,13 +19,16 @@ func Axis(plot *ebiten.Image, screen *view.Screen) {
 		c := color.RGBA{R: 104, G: 109, B: 224, A: 25}
 		lineX, _ = ebiten.NewImage(stocks.MinutesInDay, 1, ebiten.FilterDefault)
 		lineX.Fill(c)
-		lineY, _ = ebiten.NewImage(1, screen.Window.H, ebiten.FilterDefault)
+		lineY, _ = ebiten.NewImage(1, screen.Program.H, ebiten.FilterDefault)
 		lineY.Fill(c)
 	}
 
 	ly := math.Floor(screen.Camera.Bottom)
-	for ly < screen.Camera.Top {
+	for true {
 		y := (ly - screen.Camera.Bottom) * screen.Camera.ScaleY
+		if int(y) > screen.Program.H {
+			break
+		}
 		op := ebiten.DrawImageOptions{}
 		op.GeoM.Translate(0, y)
 		op.GeoM.Scale(gs, 1)
@@ -34,8 +37,11 @@ func Axis(plot *ebiten.Image, screen *view.Screen) {
 	}
 
 	ly = math.Floor(screen.Camera.Bottom)
-	for ly < screen.Camera.Top {
+	for true {
 		y := (ly - screen.Camera.Bottom) * screen.Camera.ScaleY
+		if int(y) > screen.Program.H {
+			break
+		}
 		op := ebiten.DrawImageOptions{}
 		op.GeoM.Translate(0, y)
 		op.GeoM.Scale(gs, 1)

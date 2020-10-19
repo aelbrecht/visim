@@ -24,8 +24,8 @@ func HandleCamera(s *view.Screen) {
 			sx := s.Camera.ScaleXF
 			s.Camera.ScaleXF = (float64(s.Camera.Y) / 50.0) + 1
 			if sx != s.Camera.ScaleXF {
-				w1 := float64(s.Window.W) / s.Camera.ScaleXF
-				w2 := float64(s.Window.W) / sx
+				w1 := float64(s.Plot.W) / s.Camera.ScaleXF
+				w2 := float64(s.Plot.W) / sx
 				dw := w2 - w1
 				s.Camera.XF += dw/2
 			}

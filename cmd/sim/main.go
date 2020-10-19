@@ -2,9 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/hajimehoshi/ebiten/ebitenutil"
 	"github.com/hajimehoshi/ebiten/text"
-	"image"
 	"image/color"
 	"log"
 	"math"
@@ -20,7 +18,6 @@ import (
 type Game struct {
 	Model   *stocks.Model
 	Screen  *view.Screen
-	Plot    *image.RGBA
 	Buffers Buffers
 	Options inputs.Options
 }
@@ -36,6 +33,7 @@ type DayBuffer struct {
 
 type Buffers struct {
 	Draw    *ebiten.Image
+	Menu    *ebiten.Image
 	Plot    *ebiten.Image
 	Day     map[int]*DayBuffer
 	Cursor  *ebiten.Image
@@ -43,10 +41,27 @@ type Buffers struct {
 }
 
 var (
-	RSIRange       = 14
-	BollingerRange = 27
-	SRRange        = 20
+	RSIRange        = 14
+	BollingerRange  = 27
+	SRRange         = 20
+	MenuHeight      = 40
+	ColorBlack      = color.RGBA{R: 20, G: 20, B: 20, A: 255}
+	ColorAxis       = color.RGBA{R: 48, G: 51, B: 107, A: 255}
+	ColorBackground = color.RGBA{R: 19, G: 15, B: 64, A: 255}
 )
+
+var borderPixel *ebiten.Image
+var timelinePixel *ebiten.Image
+var backgroundPixel *ebiten.Image
+
+func init() {
+	borderPixel, _ = ebiten.NewImage(1, 1, ebiten.FilterDefault)
+	borderPixel.Fill(ColorAxis)
+	timelinePixel, _ = ebiten.NewImage(1, 1, ebiten.FilterDefault)
+	timelinePixel.Fill(ColorBlack)
+	backgroundPixel, _ = ebiten.NewImage(1, 1, ebiten.FilterDefault)
+	backgroundPixel.Fill(ColorBackground)
+}
 
 func makeDayBuffer(data *stocks.MarketDay, screen *view.Screen) *DayBuffer {
 
@@ -55,7 +70,7 @@ func makeDayBuffer(data *stocks.MarketDay, screen *view.Screen) *DayBuffer {
 
 	rsiImage, err := ebiten.NewImage(stocks.MinutesInDay, 100, ebiten.FilterDefault)
 	handleFatal(err)
-	plotImage, err := ebiten.NewImage(stocks.MinutesInDay*screen.Camera.GridSize, screen.Window.H, ebiten.FilterDefault)
+	plotImage, err := ebiten.NewImage(stocks.MinutesInDay*screen.Camera.GridSize, screen.Program.H, ebiten.FilterDefault)
 	handleFatal(err)
 	candlesImage, err := ebiten.NewImage(stocks.MinutesInDay*screen.Camera.GridSize, int(minMax*100), ebiten.FilterDefault)
 	handleFatal(err)
@@ -108,10 +123,13 @@ func (g *Game) PlotDay(day int) {
 	b.Plot.Clear()
 	plots.Axis(b.Plot, g.Screen)
 
+	plotMargin := 300 - float64(MenuHeight)
+
 	if g.Options.ShowBollinger {
 		op := ebiten.DrawImageOptions{}
 		op.GeoM.Scale(gs, cam.ScaleY/100)
 		op.GeoM.Translate(0, bottomDelta)
+		op.GeoM.Translate(0, plotMargin)
 		b.Plot.DrawImage(b.Bollinger, &op)
 	}
 
@@ -120,14 +138,8 @@ func (g *Game) PlotDay(day int) {
 		op := ebiten.DrawImageOptions{}
 		op.GeoM.Scale(gs/5, cam.ScaleY/100)
 		op.GeoM.Translate(0, bottomDelta)
+		op.GeoM.Translate(0, plotMargin)
 		b.Plot.DrawImage(b.Candles, &op)
-	}
-
-	// draw rsi bars
-	if g.Options.ShowRSI {
-		op := ebiten.DrawImageOptions{}
-		op.GeoM.Scale(gs, 1)
-		b.Plot.DrawImage(b.RSI, &op)
 	}
 
 	if g.Options.ShowSupportResistance {
@@ -137,27 +149,55 @@ func (g *Game) PlotDay(day int) {
 		b.Plot.DrawImage(b.SR, &op)
 	}
 
-	// draw plot
 	op := ebiten.DrawImageOptions{}
+	op.GeoM.Scale(float64(stocks.MinutesInDay)*gs, 236)
+	op.GeoM.Translate(0, 24)
+	b.Plot.DrawImage(backgroundPixel, &op)
+
+	// draw rsi bars
+	if g.Options.ShowRSI {
+		op := ebiten.DrawImageOptions{}
+		op.GeoM.Scale(gs, 1)
+		b.Plot.DrawImage(b.RSI, &op)
+	}
+
+	// draw plot
+	op = ebiten.DrawImageOptions{}
 	op.GeoM.Scale(1, -1)
-	op.GeoM.Translate(0, float64(g.Screen.Window.H))
+	op.GeoM.Translate(0, float64(g.Screen.Program.H))
 	op.GeoM.Scale(cam.ScaleXF/gs, 1)
 	op.GeoM.Translate(float64(stocks.MinutesInDay*day)*cam.ScaleXF, 0)
 	op.GeoM.Translate(-float64(cam.X)*cam.ScaleXF, 0)
 	g.Buffers.Plot.DrawImage(b.Plot, &op)
+
+	// draw borders
+	t := float64(MenuHeight)
+
+	drawHorizontalLine(t, g)
+	drawHorizontalLine(t+float64(g.Screen.Plot.H), g)
+	drawHorizontalLine(float64(g.Screen.Program.H)-24-2, g)
+}
+
+func drawHorizontalLine(y float64, g *Game) {
+	w := float64(g.Screen.Program.W)
+	op := ebiten.DrawImageOptions{}
+	op.GeoM.Scale(w, 2)
+	op.GeoM.Translate(0, y)
+	g.Buffers.Plot.DrawImage(borderPixel, &op)
 }
 
 func (g *Game) Update(screen *ebiten.Image) error {
 
 	inputs.HandleCamera(g.Screen)
 	inputs.HandlePlot(&g.Options)
+	inputs.HandleBot(g.Model, g.Screen)
 
 	g.Screen.AutoYAxis(g.Model)
 
 	// clear existing buffers
 	g.Buffers.Tooltip.Clear()
 
-	screen.Fill(color.RGBA{R: 19, G: 15, B: 64, A: 255})
+	screen.Fill(ColorBackground)
 	g.Buffers.Plot.Clear()
 
 	v0, v1 := g.Screen.VisibleDays()
@@ -167,8 +207,6 @@ func (g *Game) Update(screen *ebiten.Image) error {
 
 	screen.DrawImage(g.Buffers.Plot, nil)
 
-	debug := fmt.Sprintf("%d\n%d-%d", int(ebiten.CurrentFPS()), v0, v1)
-
 	quoteIndex := g.Screen.Camera.X + int(float64(g.Screen.Cursor.X)/g.Screen.Camera.ScaleXF)
 	plots.TooltipCandle(quoteIndex, g.Model, g.Buffers.Tooltip, g.Screen)
 	plots.TooltipRSI(quoteIndex, RSIRange, g.Model, g.Buffers.Tooltip, g.Screen)
@@ -176,13 +214,13 @@ func (g *Game) Update(screen *ebiten.Image) error {
 	// draw text for plot
 	ly := math.Floor(g.Screen.Camera.Bottom)
 	for ly < g.Screen.Camera.Top {
-		y := int((ly - g.Screen.Camera.Bottom) * g.Screen.Camera.ScaleY)
+		y := -300 + int((ly - g.Screen.Camera.Bottom +1) * g.Screen.Camera.ScaleY)
 		text.Draw(
 			screen,
 			fmt.Sprintf("%d", int(ly)),
 			fonts.FaceHuge,
 			10,
-			g.Screen.Window.H-y-10,
+			g.Screen.Plot.H-y-10,
 			color.RGBA{104, 109, 224, 150},
 		)
 		ly += 1
@@ -201,16 +239,31 @@ func (g *Game) Update(screen *ebiten.Image) error {
 
 	// draw bot cursor
 	op = ebiten.DrawImageOptions{}
-	op.GeoM.Translate(float64((g.Model.Bot.Cursor-g.Screen.Camera.X)*3)+1, 0)
-	g.Buffers.Cursor.Fill(color.RGBA{246, 229, 141, 150})
+	op.GeoM.Scale(g.Screen.Camera.ScaleXF, 1)
+	op.GeoM.Translate(float64(g.Model.Bot.Cursor-g.Screen.Camera.X)*g.Screen.Camera.ScaleXF, 0)
+	g.Buffers.Cursor.Fill(color.RGBA{246, 229, 141, 50})
 	screen.DrawImage(g.Buffers.Cursor, &op)
 
-	ebitenutil.DebugPrint(screen, debug)
+	// draw bot position
+	op = ebiten.DrawImageOptions{}
+	op.GeoM.Scale(g.Screen.Camera.ScaleXF, 1)
+	op.GeoM.Translate(float64(g.Model.Bot.Position-g.Screen.Camera.X)*g.Screen.Camera.ScaleXF, 0)
+	g.Buffers.Cursor.Fill(color.RGBA{0, 168, 255, 100})
+	screen.DrawImage(g.Buffers.Cursor, &op)
+
+	op = ebiten.DrawImageOptions{}
+	op.GeoM.Scale(float64(g.Screen.Program.W), 24)
+	op.GeoM.Translate(0, float64(g.Screen.Program.H)-24)
+	screen.DrawImage(timelinePixel, &op)
+
+	g.Buffers.Menu.Fill(ColorBlack)
+	screen.DrawImage(g.Buffers.Menu, nil)
+
 	return nil
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
-	return g.Screen.Window.W, g.Screen.Window.H
+	return g.Screen.Program.W, g.Screen.Program.H
 }
 
 func handleFatal(err error) {
@@ -224,15 +277,14 @@ func main() {
 	data := stocks.GetDataCSV("./data/msft.csv")
 	// data := stocks.GetData("AAPL","2020-10-01","2020-10-03")
 
-	w, h := 1280, 800
-	bufferDraw, err := ebiten.NewImage(w, h, ebiten.FilterDefault)
-	handleFatal(err)
-	bufferPlot, err := ebiten.NewImage(w, h, ebiten.FilterDefault)
-	handleFatal(err)
-	tooltipPlot, err := ebiten.NewImage(w, h, ebiten.FilterDefault)
-	handleFatal(err)
-	bufferCursor, err := ebiten.NewImage(1, h, ebiten.FilterDefault)
-	handleFatal(err)
+	programWindow := view.Window{1280, 900}
+	plotWindow := view.Window{W: 1280, H: 600}
+
+	bufferDraw, _ := ebiten.NewImage(programWindow.W, programWindow.H, ebiten.FilterDefault)
+	bufferPlot, _ := ebiten.NewImage(programWindow.W, programWindow.H, ebiten.FilterDefault)
+	tooltipPlot, _ := ebiten.NewImage(programWindow.W, programWindow.H, ebiten.FilterDefault)
+	bufferCursor, _ := ebiten.NewImage(1, programWindow.H, ebiten.FilterDefault)
+	bufferMenu, _ := ebiten.NewImage(programWindow.W, MenuHeight, ebiten.FilterDefault)
 
 	game := Game{
 		Model: &stocks.Model{
@@ -242,13 +294,12 @@ func main() {
 			},
 		},
 		Screen: &view.Screen{
-			Camera: &view.Camera{ScaleX: 5, ScaleXF: 5, GridSize: 5, Y: 200},
-			Window: view.Window{w, h},
+			Camera:  &view.Camera{ScaleX: 5, ScaleXF: 5, GridSize: 5, Y: 200},
+			Plot:    plotWindow,
+			Program: programWindow,
 		},
-		Plot: image.NewRGBA(image.Rectangle{
-			Max: image.Point{w, h},
-		}),
 		Buffers: Buffers{
+			Menu:    bufferMenu,
 			Draw:    bufferDraw,
 			Plot:    bufferPlot,
 			Tooltip: tooltipPlot,
@@ -262,8 +313,8 @@ func main() {
 		},
 	}
 
-	ebiten.SetWindowSize(game.Screen.Window.W, game.Screen.Window.H)
-	ebiten.SetWindowTitle("Muon Trade Sim")
+	ebiten.SetWindowSize(game.Screen.Program.W, game.Screen.Program.H)
+	ebiten.SetWindowTitle("Muon Market View")
 	if err := ebiten.RunGame(&game); err != nil {
 		log.Fatal(err)
 	}

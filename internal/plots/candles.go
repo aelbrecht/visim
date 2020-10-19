@@ -32,7 +32,7 @@ func TooltipCandle(i int, m *stocks.Model, buffer *ebiten.Image, screen *view.Sc
 		return
 	}
 	x := int(float64(i-screen.Camera.X)*screen.Camera.ScaleXF) + paddingLeft
-	y0 := screen.Window.H - int((q.High-screen.Camera.Bottom)*screen.Camera.ScaleY)
+	y0 := screen.Plot.H - int((q.High-screen.Camera.Bottom)*screen.Camera.ScaleY)
 	fonts.Background(x-3, y0+13*6+6, 120, 16*6, color.RGBA{48, 51, 107, 200}, buffer)
 	date := time.Unix(q.Time, 0).In(time.FixedZone("GMT", 0))
 	stringDate := strings.Split(date.Format(time.RFC3339), "T")

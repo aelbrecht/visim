@@ -26,7 +26,8 @@ type MarketDay struct {
 }
 
 type Bot struct {
-	Cursor int
+	Cursor   int
+	Position int
 }
 
 type Quote struct {
