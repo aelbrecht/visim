@@ -40,6 +40,7 @@ var (
 	SRRange         = 20
 	MenuHeight      = 40
 	ColorBlack      = color.RGBA{R: 20, G: 20, B: 20, A: 255}
+	ColorGray       = color.RGBA{R: 50, G: 50, B: 50, A: 255}
 	ColorAxis       = color.RGBA{R: 48, G: 51, B: 107, A: 255}
 	ColorBackground = color.RGBA{R: 19, G: 15, B: 64, A: 255}
 	ColorCursor     = color.RGBA{R: 104, G: 109, B: 224, A: 150}
@@ -52,6 +53,7 @@ var cursorPixel *ebiten.Image
 var botCursorPixel *ebiten.Image
 var selectionPixel *ebiten.Image
 var menuPixel *ebiten.Image
+var grayPixel *ebiten.Image
 
 func init() {
 	borderPixel, _ = ebiten.NewImage(1, 1, ebiten.FilterDefault)
@@ -68,6 +70,8 @@ func init() {
 	selectionPixel.Fill(ColorCursor)
 	menuPixel, _ = ebiten.NewImage(1, 1, ebiten.FilterDefault)
 	menuPixel.Fill(ColorBlack)
+	grayPixel, _ = ebiten.NewImage(1, 1, ebiten.FilterDefault)
+	grayPixel.Fill(ColorGray)
 }
 
 func (g *Game) Update(screen *ebiten.Image) error {
@@ -103,7 +107,7 @@ func (g *Game) Update(screen *ebiten.Image) error {
 	// plot interface
 	drawCursors(g, screen)
 	drawVerticalLabels(g.Screen, screen)
-	drawHorizontalLabels(g.Screen, screen)
+	drawHorizontalLabels(g.Screen, g.Model, screen)
 	drawMenu(g.Screen, screen)
 
 	return nil

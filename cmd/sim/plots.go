@@ -6,6 +6,8 @@ import (
 	"github.com/hajimehoshi/ebiten/text"
 	"image/color"
 	"math"
+	"strings"
+	"time"
 	"visim.muon.one/internal/fonts"
 	"visim.muon.one/internal/inputs"
 	"visim.muon.one/internal/plots"
@@ -136,11 +138,48 @@ func plotDay(g *Game, day int) {
 }
 
 // draw date label for horizontal axis
-func drawHorizontalLabels(s *view.Screen, plot *ebiten.Image) {
+func drawHorizontalLabels(s *view.Screen, m *stocks.Model, plot *ebiten.Image) {
 	op := ebiten.DrawImageOptions{}
 	op.GeoM.Scale(float64(s.Program.W), 24)
 	op.GeoM.Translate(0, float64(s.Program.H)-24)
 	plot.DrawImage(timelinePixel, &op)
+
+	a, b := s.VisibleDays()
+	for i := a; i <= b; i++ {
+
+		pos := i * stocks.MinutesInDay
+		dx := pos - s.Camera.X
+		x := float64(dx) * s.Camera.ScaleXF
+
+		op := ebiten.DrawImageOptions{}
+		op.GeoM.Scale(s.Camera.ScaleXF, 24)
+		op.GeoM.Translate(x, float64(s.Program.H)-24)
+		plot.DrawImage(grayPixel, &op)
+
+		xm := float64(dx+stocks.MinutesInDay)*s.Camera.ScaleXF
+		if xm < 160 {
+			x = xm - 160 + 5
+		} else {
+			x = math.Max(x + s.Camera.ScaleXF*2+ 5, 5)
+		}
+
+		q := m.GetQuote(pos)
+		if q == nil {
+			continue
+		}
+
+		date := time.Unix(q.Time, 0).In(time.FixedZone("GMT", 0))
+		stringDate := strings.Split(date.Format(time.RFC3339), "T")
+		text.Draw(
+			plot,
+			stringDate[0],
+			fonts.FaceLarge,
+			int(x),
+			s.Program.H-5,
+			color.RGBA{255, 255, 255, 255},
+		)
+	}
+
 }
 
 func drawMenu(s *view.Screen, plot *ebiten.Image) {
