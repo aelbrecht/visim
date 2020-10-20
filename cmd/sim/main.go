@@ -92,10 +92,10 @@ func makeDayBuffer(data *stocks.MarketDay, screen *view.Screen) *DayBuffer {
 	}
 }
 
-func plotPrimary(b *DayBuffer, o *inputs.Options, c *view.Camera, s *view.Screen, data *stocks.MarketDay, day int, plot *ebiten.Image) {
+// draw primary plot and its axis
+func plotPrimary(b *DayBuffer, o *inputs.Options, s *view.Screen, day int, plot *ebiten.Image, data *stocks.MarketDay) {
 
-	// draw textures to buffer in on axis
-
+	c := s.Camera
 	min, _ := data.GetRange()
 	bottomDelta := (min - c.Bottom) * c.ScaleY
 	gs := float64(c.GridSize)
@@ -138,10 +138,11 @@ func plotPrimary(b *DayBuffer, o *inputs.Options, c *view.Camera, s *view.Screen
 }
 
 // draw rsi bars
-func plotRSI(b *DayBuffer, o *inputs.Options, c *view.Camera, s *view.Screen, data *stocks.MarketDay, day int, plot *ebiten.Image) {
+func plotRSI(b *DayBuffer, o *inputs.Options, s *view.Screen, day int, plot *ebiten.Image) {
 	if !o.ShowRSI {
 		return
 	}
+	c := s.Camera
 	op := ebiten.DrawImageOptions{}
 	op.GeoM.Scale(float64(c.GridSize), -1)
 	op.GeoM.Translate(0, float64(s.Program.H))
@@ -159,14 +160,13 @@ func (g *Game) PlotDay(day int) {
 		return
 	}
 
-	cam := g.Screen.Camera
-
+	// generate buffer in memory
 	if g.Buffers.Day[day] == nil {
 		g.Buffers.Day[day] = makeDayBuffer(data, g.Screen)
 	}
 	b := g.Buffers.Day[day]
 
-	// update textures if needed
+	// redraw textures if needed
 	if b.Update {
 		data := g.Model.GetQuoteDay(day)
 		plots.Candles(data, b.Candles)
@@ -176,17 +176,12 @@ func (g *Game) PlotDay(day int) {
 		b.Update = false
 	}
 
-	plotPrimary(b, &g.Options, cam, g.Screen, data, day, g.Buffers.Plot)
-	plotRSI(b, &g.Options, cam, g.Screen, data, day, g.Buffers.Plot)
+	// draw plot and subplots
+	plotPrimary(b, &g.Options, g.Screen, day, g.Buffers.Plot, data)
+	plotRSI(b, &g.Options, g.Screen, day, g.Buffers.Plot)
 
-	/*op := ebiten.DrawImageOptions{}
-	op.GeoM.Scale(float64(stocks.MinutesInDay)*gs, 236)
-	op.GeoM.Translate(0, 24)
-	b.Plot.DrawImage(backgroundPixel, &op)*/
-
-	// draw borders
+	// draw plot dividers
 	t := float64(MenuHeight)
-
 	drawHorizontalLine(t, g)
 	drawHorizontalLine(t+float64(g.Screen.Plot.H)+100, g)
 	drawHorizontalLine(t+float64(g.Screen.Plot.H)-2, g)
