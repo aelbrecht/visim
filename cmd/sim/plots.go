@@ -1,7 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"github.com/hajimehoshi/ebiten"
+	"github.com/hajimehoshi/ebiten/text"
+	"image/color"
+	"math"
+	"visim.muon.one/internal/fonts"
 	"visim.muon.one/internal/inputs"
 	"visim.muon.one/internal/plots"
 	"visim.muon.one/internal/stocks"
@@ -128,6 +133,43 @@ func plotDay(g *Game, day int) {
 	drawHorizontalLine(t+float64(g.Screen.Plot.H)+100, g)
 	drawHorizontalLine(t+float64(g.Screen.Plot.H)-2, g)
 	drawHorizontalLine(float64(g.Screen.Program.H)-24-2, g)
+}
+
+// draw date label for horizontal axis
+func drawHorizontalLabels(s *view.Screen, plot *ebiten.Image) {
+	op := ebiten.DrawImageOptions{}
+	op.GeoM.Scale(float64(s.Program.W), 24)
+	op.GeoM.Translate(0, float64(s.Program.H)-24)
+	plot.DrawImage(timelinePixel, &op)
+}
+
+func drawMenu(s *view.Screen, plot *ebiten.Image) {
+	op := ebiten.DrawImageOptions{}
+	op.GeoM.Scale(float64(s.Program.W), float64(MenuHeight))
+	plot.DrawImage(menuPixel, &op)
+}
+
+// draw price labels for vertical axis
+func drawVerticalLabels(s *view.Screen, plot *ebiten.Image) {
+	c := s.Camera
+	ly := math.Floor(c.Bottom)
+	for ly < c.Top {
+		y := int((ly - c.Bottom) * c.ScaleY)
+		y = s.Plot.H - y + MenuHeight
+		if y > 600+MenuHeight {
+			ly += 1
+			continue
+		}
+		text.Draw(
+			plot,
+			fmt.Sprintf("%d", int(ly)),
+			fonts.FaceHuge,
+			10,
+			y-10,
+			color.RGBA{104, 109, 224, 150},
+		)
+		ly += 1
+	}
 }
 
 func drawHorizontalLine(y float64, g *Game) {

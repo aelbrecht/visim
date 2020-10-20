@@ -1,12 +1,8 @@
 package main
 
 import (
-	"fmt"
-	"github.com/hajimehoshi/ebiten/text"
 	"image/color"
 	"log"
-	"math"
-	"visim.muon.one/internal/fonts"
 	"visim.muon.one/internal/inputs"
 	"visim.muon.one/internal/plots"
 	"visim.muon.one/internal/stocks"
@@ -33,7 +29,6 @@ type DayBuffer struct {
 
 type Buffers struct {
 	Draw    *ebiten.Image
-	Menu    *ebiten.Image
 	Plot    *ebiten.Image
 	Day     map[int]*DayBuffer
 	Tooltip *ebiten.Image
@@ -54,6 +49,9 @@ var borderPixel *ebiten.Image
 var timelinePixel *ebiten.Image
 var backgroundPixel *ebiten.Image
 var cursorPixel *ebiten.Image
+var botCursorPixel *ebiten.Image
+var selectionPixel *ebiten.Image
+var menuPixel *ebiten.Image
 
 func init() {
 	borderPixel, _ = ebiten.NewImage(1, 1, ebiten.FilterDefault)
@@ -64,6 +62,12 @@ func init() {
 	backgroundPixel.Fill(ColorBackground)
 	cursorPixel, _ = ebiten.NewImage(1, 1, ebiten.FilterDefault)
 	cursorPixel.Fill(ColorCursor)
+	botCursorPixel, _ = ebiten.NewImage(1, 1, ebiten.FilterDefault)
+	botCursorPixel.Fill(color.RGBA{249, 202, 36, 100})
+	selectionPixel, _ = ebiten.NewImage(1, 1, ebiten.FilterDefault)
+	selectionPixel.Fill(ColorCursor)
+	menuPixel, _ = ebiten.NewImage(1, 1, ebiten.FilterDefault)
+	menuPixel.Fill(ColorBlack)
 }
 
 func (g *Game) Update(screen *ebiten.Image) error {
@@ -72,12 +76,12 @@ func (g *Game) Update(screen *ebiten.Image) error {
 	inputs.HandlePlot(&g.Options)
 	inputs.HandleBot(g.Model, g.Screen)
 
+	screen.Fill(ColorBackground)
 	g.Screen.AutoYAxis(g.Model)
 
 	// clear existing buffers
 	g.Buffers.Tooltip.Clear()
 
-	screen.Fill(ColorBackground)
 	g.Buffers.Plot.Clear()
 
 	v0, v1 := g.Screen.VisibleDays()
@@ -91,33 +95,19 @@ func (g *Game) Update(screen *ebiten.Image) error {
 	plots.TooltipCandle(quoteIndex, g.Model, g.Buffers.Tooltip, g.Screen)
 	plots.TooltipRSI(quoteIndex, RSIRange, g.Model, g.Buffers.Tooltip, g.Screen)
 
-	// draw text for plot
-	ly := math.Floor(g.Screen.Camera.Bottom)
-	for ly < g.Screen.Camera.Top {
-		y := int((ly - g.Screen.Camera.Bottom) * g.Screen.Camera.ScaleY)
-		y = g.Screen.Plot.H - y + MenuHeight
-		if y > 600+MenuHeight {
-			ly += 1
-			continue
-		}
-		text.Draw(
-			screen,
-			fmt.Sprintf("%d", int(ly)),
-			fonts.FaceHuge,
-			10,
-			y-10,
-			color.RGBA{104, 109, 224, 150},
-		)
-		ly += 1
-	}
-
 	// draw tooltip buffer
 	if !ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 		screen.DrawImage(g.Buffers.Tooltip, nil)
 	}
 
-	// draw horizontal cursor
+	// draw bot position
 	op := ebiten.DrawImageOptions{}
+	op.GeoM.Scale(g.Screen.Camera.ScaleXF, float64(g.Screen.Program.H))
+	op.GeoM.Translate(float64(g.Model.Bot.Position-g.Screen.Camera.X)*g.Screen.Camera.ScaleXF, 0)
+	screen.DrawImage(botCursorPixel, &op)
+
+	// draw horizontal cursor
+	op = ebiten.DrawImageOptions{}
 	op.GeoM.Scale(1, float64(g.Screen.Program.H))
 	op.GeoM.Translate(float64(g.Screen.Cursor.X), 0)
 	screen.DrawImage(cursorPixel, &op)
@@ -128,27 +118,15 @@ func (g *Game) Update(screen *ebiten.Image) error {
 	op.GeoM.Translate(0, float64(g.Screen.Cursor.Y))
 	screen.DrawImage(cursorPixel, &op)
 
-	// draw bot cursor
-	/*op = ebiten.DrawImageOptions{}
-	op.GeoM.Scale(float64(g.Screen.Program.W), 1)
+	// draw selection
+	op = ebiten.DrawImageOptions{}
+	op.GeoM.Scale(g.Screen.Camera.ScaleXF, float64(g.Screen.Program.H))
 	op.GeoM.Translate(float64(g.Model.Bot.Cursor-g.Screen.Camera.X)*g.Screen.Camera.ScaleXF, 0)
-	cursorPixel.Fill(ColorCursor)
-	screen.DrawImage(cursorPixel, &op)
+	screen.DrawImage(selectionPixel, &op)
 
-	// draw bot position
-	op = ebiten.DrawImageOptions{}
-	op.GeoM.Scale(float64(g.Screen.Program.W), 1)
-	op.GeoM.Translate(float64(g.Model.Bot.Position-g.Screen.Camera.X)*g.Screen.Camera.ScaleXF, 0)
-	cursorPixel.Fill(color.RGBA{0, 168, 255, 100})
-	screen.DrawImage(cursorPixel, &op)*/
-
-	op = ebiten.DrawImageOptions{}
-	op.GeoM.Scale(float64(g.Screen.Program.W), 24)
-	op.GeoM.Translate(0, float64(g.Screen.Program.H)-24)
-	screen.DrawImage(timelinePixel, &op)
-
-	g.Buffers.Menu.Fill(ColorBlack)
-	screen.DrawImage(g.Buffers.Menu, nil)
+	drawVerticalLabels(g.Screen, screen)
+	drawHorizontalLabels(g.Screen, screen)
+	drawMenu(g.Screen, screen)
 
 	return nil
 }
@@ -174,13 +152,13 @@ func main() {
 	bufferDraw, _ := ebiten.NewImage(programWindow.W, programWindow.H, ebiten.FilterDefault)
 	bufferPlot, _ := ebiten.NewImage(programWindow.W, programWindow.H, ebiten.FilterDefault)
 	tooltipPlot, _ := ebiten.NewImage(programWindow.W, programWindow.H, ebiten.FilterDefault)
-	bufferMenu, _ := ebiten.NewImage(programWindow.W, MenuHeight, ebiten.FilterDefault)
 
 	game := Game{
 		Model: &stocks.Model{
 			Data: data,
 			Bot: stocks.Bot{
-				Cursor: 0,
+				Cursor:   0,
+				Position: 100,
 			},
 		},
 		Screen: &view.Screen{
@@ -189,7 +167,6 @@ func main() {
 			Program: programWindow,
 		},
 		Buffers: Buffers{
-			Menu:    bufferMenu,
 			Draw:    bufferDraw,
 			Plot:    bufferPlot,
 			Tooltip: tooltipPlot,
