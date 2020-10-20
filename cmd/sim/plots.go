@@ -179,3 +179,31 @@ func drawHorizontalLine(y float64, g *Game) {
 	op.GeoM.Translate(0, y)
 	g.Buffers.Plot.DrawImage(borderPixel, &op)
 }
+
+func drawCursors(g *Game, screen *ebiten.Image) {
+
+	// draw bot position
+	op := ebiten.DrawImageOptions{}
+	op.GeoM.Scale(g.Screen.Camera.ScaleXF, float64(g.Screen.Program.H))
+	op.GeoM.Translate(float64(g.Model.Bot.Position-g.Screen.Camera.X)*g.Screen.Camera.ScaleXF, 0)
+	screen.DrawImage(botCursorPixel, &op)
+
+	// draw horizontal cursor
+	op = ebiten.DrawImageOptions{}
+	op.GeoM.Scale(1, float64(g.Screen.Program.H))
+	op.GeoM.Translate(float64(g.Screen.Cursor.X), 0)
+	screen.DrawImage(cursorPixel, &op)
+
+	// draw vertical cursor
+	op = ebiten.DrawImageOptions{}
+	op.GeoM.Scale(float64(g.Screen.Program.W), 1)
+	op.GeoM.Translate(0, float64(g.Screen.Cursor.Y))
+	screen.DrawImage(cursorPixel, &op)
+
+	// draw selection
+	op = ebiten.DrawImageOptions{}
+	op.GeoM.Scale(g.Screen.Camera.ScaleXF, float64(g.Screen.Program.H))
+	op.GeoM.Translate(float64(g.Model.Bot.Cursor-g.Screen.Camera.X)*g.Screen.Camera.ScaleXF, 0)
+	screen.DrawImage(selectionPixel, &op)
+
+}

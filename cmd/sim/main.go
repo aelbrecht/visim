@@ -72,58 +72,36 @@ func init() {
 
 func (g *Game) Update(screen *ebiten.Image) error {
 
+	// handle inputs
 	inputs.HandleCamera(g.Screen)
 	inputs.HandlePlot(&g.Options)
 	inputs.HandleBot(g.Model, g.Screen)
 
-	screen.Fill(ColorBackground)
+	// scale axis to always fit visible data
 	g.Screen.AutoYAxis(g.Model)
 
-	// clear existing buffers
+	// clear screen and buffers
+	screen.Fill(ColorBackground)
 	g.Buffers.Tooltip.Clear()
-
 	g.Buffers.Plot.Clear()
 
+	// plot stock
 	v0, v1 := g.Screen.VisibleDays()
 	for i := v0; i <= v1; i++ {
 		plotDay(g, i)
 	}
-
 	screen.DrawImage(g.Buffers.Plot, nil)
 
+	// plot tooltips
 	quoteIndex := g.Screen.Camera.X + int(float64(g.Screen.Cursor.X)/g.Screen.Camera.ScaleXF)
 	plots.TooltipCandle(quoteIndex, g.Model, g.Buffers.Tooltip, g.Screen)
 	plots.TooltipRSI(quoteIndex, RSIRange, g.Model, g.Buffers.Tooltip, g.Screen)
-
-	// draw tooltip buffer
 	if !ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 		screen.DrawImage(g.Buffers.Tooltip, nil)
 	}
 
-	// draw bot position
-	op := ebiten.DrawImageOptions{}
-	op.GeoM.Scale(g.Screen.Camera.ScaleXF, float64(g.Screen.Program.H))
-	op.GeoM.Translate(float64(g.Model.Bot.Position-g.Screen.Camera.X)*g.Screen.Camera.ScaleXF, 0)
-	screen.DrawImage(botCursorPixel, &op)
-
-	// draw horizontal cursor
-	op = ebiten.DrawImageOptions{}
-	op.GeoM.Scale(1, float64(g.Screen.Program.H))
-	op.GeoM.Translate(float64(g.Screen.Cursor.X), 0)
-	screen.DrawImage(cursorPixel, &op)
-
-	// draw vertical cursor
-	op = ebiten.DrawImageOptions{}
-	op.GeoM.Scale(float64(g.Screen.Program.W), 1)
-	op.GeoM.Translate(0, float64(g.Screen.Cursor.Y))
-	screen.DrawImage(cursorPixel, &op)
-
-	// draw selection
-	op = ebiten.DrawImageOptions{}
-	op.GeoM.Scale(g.Screen.Camera.ScaleXF, float64(g.Screen.Program.H))
-	op.GeoM.Translate(float64(g.Model.Bot.Cursor-g.Screen.Camera.X)*g.Screen.Camera.ScaleXF, 0)
-	screen.DrawImage(selectionPixel, &op)
-
+	// plot interface
+	drawCursors(g, screen)
 	drawVerticalLabels(g.Screen, screen)
 	drawHorizontalLabels(g.Screen, screen)
 	drawMenu(g.Screen, screen)
