@@ -16,6 +16,12 @@ type Model struct {
 	Bot  Bot
 }
 
+type Order struct {
+	Buy    bool
+	Amount int
+	Quote  *Quote
+}
+
 type DailyHistory = []*MarketDay
 
 type MarketDay struct {
@@ -28,6 +34,11 @@ type MarketDay struct {
 type Bot struct {
 	Cursor   int
 	Position int
+	Start    int
+	End      int
+	Running  bool
+	Fast     bool
+	Orders   map[int]*Order
 }
 
 type Quote struct {

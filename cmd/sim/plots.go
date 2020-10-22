@@ -10,6 +10,7 @@ import (
 	"time"
 	"visim.muon.one/internal/fonts"
 	"visim.muon.one/internal/inputs"
+	"visim.muon.one/internal/layout"
 	"visim.muon.one/internal/plots"
 	"visim.muon.one/internal/stocks"
 	"visim.muon.one/internal/view"
@@ -132,9 +133,9 @@ func plotDay(g *Game, day int) {
 	// draw plot dividers
 	t := float64(MenuHeight)
 	drawHorizontalLine(t, g)
-	drawHorizontalLine(t+float64(g.Screen.Plot.H)+100, g)
-	drawHorizontalLine(t+float64(g.Screen.Plot.H)-2, g)
-	drawHorizontalLine(float64(g.Screen.Program.H)-24-2, g)
+	drawHorizontalLine(float64(g.Screen.Plot.H), g)
+	//drawHorizontalLine(t+float64(g.Screen.Plot.H)-2, g)
+	drawHorizontalLine(float64(g.Screen.Program.H)-16-2, g)
 }
 
 // draw date label for horizontal axis
@@ -182,12 +183,12 @@ func drawHorizontalLabels(s *view.Screen, m *stocks.Model, plot *ebiten.Image) {
 
 }
 
-func drawMenu(s *view.Screen, plot *ebiten.Image) {
+func drawMenu(buttons []*layout.Button, s *view.Screen, plot *ebiten.Image) {
 	op := ebiten.DrawImageOptions{}
 	op.GeoM.Scale(float64(s.Program.W), float64(MenuHeight))
 	plot.DrawImage(menuPixel, &op)
 
-	for _, button := range menuButtons {
+	for _, button := range buttons {
 		button.Draw(s, plot)
 	}
 }
@@ -221,32 +222,4 @@ func drawHorizontalLine(y float64, g *Game) {
 	op.GeoM.Scale(w, 2)
 	op.GeoM.Translate(0, y)
 	g.Buffers.Plot.DrawImage(borderPixel, &op)
-}
-
-func drawCursors(g *Game, screen *ebiten.Image) {
-
-	// draw bot position
-	op := ebiten.DrawImageOptions{}
-	op.GeoM.Scale(g.Screen.Camera.ScaleXF, float64(g.Screen.Program.H))
-	op.GeoM.Translate(float64(g.Model.Bot.Position-g.Screen.Camera.X)*g.Screen.Camera.ScaleXF, 0)
-	screen.DrawImage(botCursorPixel, &op)
-
-	// draw horizontal cursor
-	op = ebiten.DrawImageOptions{}
-	op.GeoM.Scale(1, float64(g.Screen.Program.H))
-	op.GeoM.Translate(float64(g.Screen.Cursor.X), 0)
-	screen.DrawImage(cursorPixel, &op)
-
-	// draw vertical cursor
-	op = ebiten.DrawImageOptions{}
-	op.GeoM.Scale(float64(g.Screen.Program.W), 1)
-	op.GeoM.Translate(0, float64(g.Screen.Cursor.Y))
-	screen.DrawImage(cursorPixel, &op)
-
-	// draw selection
-	op = ebiten.DrawImageOptions{}
-	op.GeoM.Scale(g.Screen.Camera.ScaleXF, float64(g.Screen.Program.H))
-	op.GeoM.Translate(float64(g.Model.Bot.Cursor-g.Screen.Camera.X)*g.Screen.Camera.ScaleXF, 0)
-	screen.DrawImage(selectionPixel, &op)
-
 }

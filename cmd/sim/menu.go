@@ -1,18 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"visim.muon.one/internal/layout"
+	"visim.muon.one/internal/stocks"
 )
 
-var menuButtons []*layout.Button
-
-func runBot() {
-	fmt.Println("test")
-}
-
-func init() {
-	menuButtons = make([]*layout.Button, 0)
+func makeMenuButtons(m *stocks.Model) []*layout.Button {
+	var menuButtons = make([]*layout.Button, 0)
 	addButton := func(b *layout.Button) int {
 		menuButtons = append(menuButtons, b)
 		return b.GetShape().Max.X
@@ -20,18 +14,26 @@ func init() {
 
 	var x int
 	x = addButton(layout.NewButton(8, 8, "Run", func() {
-		runBot()
+		m.Bot.Running = true
+		m.Bot.Fast = false
+	}))
+	x = addButton(layout.NewButton(8, 8, "Fast Forward", func() {
+		m.Bot.Running = true
+		m.Bot.Fast = true
 	}))
 	x = addButton(layout.NewButton(x+8, 8, "Pause", func() {
-		runBot()
+		m.Bot.Running = false
 	}))
 	x = addButton(layout.NewButton(x+8, 8, "Reset", func() {
-		runBot()
+		m.Bot.Position = m.Bot.Start
+		m.Bot.Orders = make(map[int]*stocks.Order)
 	}))
 	x = addButton(layout.NewButton(x+8, 8, "Set Start", func() {
-		runBot()
+		m.Bot.Start = m.Bot.Cursor
 	}))
 	x = addButton(layout.NewButton(x+8, 8, "Set End", func() {
-		runBot()
+		m.Bot.End = m.Bot.Cursor
 	}))
+
+	return menuButtons
 }

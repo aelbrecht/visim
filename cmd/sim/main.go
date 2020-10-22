@@ -4,6 +4,7 @@ import (
 	"image/color"
 	"log"
 	"visim.muon.one/internal/inputs"
+	"visim.muon.one/internal/layout"
 	"visim.muon.one/internal/plots"
 	"visim.muon.one/internal/stocks"
 	"visim.muon.one/internal/view"
@@ -12,6 +13,7 @@ import (
 )
 
 type Game struct {
+	Buttons []*layout.Button
 	Model   *stocks.Model
 	Screen  *view.Screen
 	Buffers Buffers
@@ -77,7 +79,7 @@ func init() {
 func (g *Game) Update(screen *ebiten.Image) error {
 
 	// handle inputs
-	inputs.HandleMouseLeft(g.Screen, menuButtons)
+	inputs.HandleMouseLeft(g.Screen, g.Buttons)
 	inputs.HandlePlot(&g.Options)
 	inputs.HandleBot(g.Model, g.Screen)
 
@@ -96,6 +98,9 @@ func (g *Game) Update(screen *ebiten.Image) error {
 	}
 	screen.DrawImage(g.Buffers.Plot, nil)
 
+	// plot trade indicators
+	plotTrades(g, screen)
+
 	// plot tooltips
 	quoteIndex := g.Screen.Camera.X + int(float64(g.Screen.Cursor.X)/g.Screen.Camera.ScaleXF)
 	plots.TooltipCandle(quoteIndex, g.Model, g.Buffers.Tooltip, g.Screen)
@@ -108,7 +113,7 @@ func (g *Game) Update(screen *ebiten.Image) error {
 	drawCursors(g, screen)
 	drawVerticalLabels(g.Screen, screen)
 	drawHorizontalLabels(g.Screen, g.Model, screen)
-	drawMenu(g.Screen, screen)
+	drawMenu(g.Buttons, g.Screen, screen)
 
 	return nil
 }
@@ -128,21 +133,28 @@ func main() {
 	data := stocks.GetDataCSV("./data/msft.csv")
 	// data := stocks.GetData("AAPL","2020-10-01","2020-10-03")
 
-	programWindow := view.Window{1400, 840}
+	programWindow := view.Window{W: 1400, H: 840}
 	plotWindow := view.Window{W: 1400, H: 600}
 
 	bufferDraw, _ := ebiten.NewImage(programWindow.W, programWindow.H, ebiten.FilterDefault)
 	bufferPlot, _ := ebiten.NewImage(programWindow.W, programWindow.H, ebiten.FilterDefault)
 	tooltipPlot, _ := ebiten.NewImage(programWindow.W, programWindow.H, ebiten.FilterDefault)
 
-	game := Game{
-		Model: &stocks.Model{
-			Data: data,
-			Bot: stocks.Bot{
-				Cursor:   0,
-				Position: 100,
-			},
+	model := &stocks.Model{
+		Data: data,
+		Bot: stocks.Bot{
+			Cursor:   0,
+			Position: 60,
+			Start:    60,
+			End:      stocks.MinutesInDay - 60,
+			Running:  false,
+			Orders:   make(map[int]*stocks.Order),
 		},
+	}
+
+	game := Game{
+		Buttons: makeMenuButtons(model),
+		Model:   model,
 		Screen: &view.Screen{
 			Camera:  &view.Camera{ScaleX: 5, ScaleXF: 5, GridSize: 5, Y: 200},
 			Plot:    plotWindow,
@@ -160,6 +172,8 @@ func main() {
 			ShowQuotes:    true,
 		},
 	}
+
+	go RunBot(model)
 
 	ebiten.SetWindowSize(game.Screen.Program.W, game.Screen.Program.H)
 	ebiten.SetWindowTitle("Muon Market View")
