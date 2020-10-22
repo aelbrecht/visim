@@ -29,7 +29,6 @@ type Screen struct {
 	Camera   *Camera
 	Plot     Window
 	Program  Window
-	HasMoved bool
 }
 
 func (screen *Screen) VisibleDays() (int, int) {

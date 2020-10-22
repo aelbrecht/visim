@@ -140,8 +140,8 @@ func plotDay(g *Game, day int) {
 // draw date label for horizontal axis
 func drawHorizontalLabels(s *view.Screen, m *stocks.Model, plot *ebiten.Image) {
 	op := ebiten.DrawImageOptions{}
-	op.GeoM.Scale(float64(s.Program.W), 24)
-	op.GeoM.Translate(0, float64(s.Program.H)-24)
+	op.GeoM.Scale(float64(s.Program.W), 16)
+	op.GeoM.Translate(0, float64(s.Program.H)-16)
 	plot.DrawImage(timelinePixel, &op)
 
 	a, b := s.VisibleDays()
@@ -152,15 +152,15 @@ func drawHorizontalLabels(s *view.Screen, m *stocks.Model, plot *ebiten.Image) {
 		x := float64(dx) * s.Camera.ScaleXF
 
 		op := ebiten.DrawImageOptions{}
-		op.GeoM.Scale(s.Camera.ScaleXF, 24)
-		op.GeoM.Translate(x, float64(s.Program.H)-24)
+		op.GeoM.Scale(s.Camera.ScaleXF, 16)
+		op.GeoM.Translate(x, float64(s.Program.H)-16)
 		plot.DrawImage(grayPixel, &op)
 
-		xm := float64(dx+stocks.MinutesInDay)*s.Camera.ScaleXF
-		if xm < 160 {
-			x = xm - 160 + 5
+		xm := float64(dx+stocks.MinutesInDay) * s.Camera.ScaleXF
+		if xm < 80 {
+			x = xm - 80 + 5
 		} else {
-			x = math.Max(x + s.Camera.ScaleXF*2+ 5, 5)
+			x = math.Max(x+s.Camera.ScaleXF*2+5, 5)
 		}
 
 		q := m.GetQuote(pos)
@@ -173,7 +173,7 @@ func drawHorizontalLabels(s *view.Screen, m *stocks.Model, plot *ebiten.Image) {
 		text.Draw(
 			plot,
 			stringDate[0],
-			fonts.FaceLarge,
+			fonts.FaceNormal,
 			int(x),
 			s.Program.H-5,
 			color.RGBA{255, 255, 255, 255},
@@ -186,6 +186,10 @@ func drawMenu(s *view.Screen, plot *ebiten.Image) {
 	op := ebiten.DrawImageOptions{}
 	op.GeoM.Scale(float64(s.Program.W), float64(MenuHeight))
 	plot.DrawImage(menuPixel, &op)
+
+	for _, button := range menuButtons {
+		button.Draw(s, plot)
+	}
 }
 
 // draw price labels for vertical axis

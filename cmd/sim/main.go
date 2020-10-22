@@ -77,7 +77,7 @@ func init() {
 func (g *Game) Update(screen *ebiten.Image) error {
 
 	// handle inputs
-	inputs.HandleCamera(g.Screen)
+	inputs.HandleMouseLeft(g.Screen, menuButtons)
 	inputs.HandlePlot(&g.Options)
 	inputs.HandleBot(g.Model, g.Screen)
 
@@ -128,7 +128,7 @@ func main() {
 	data := stocks.GetDataCSV("./data/msft.csv")
 	// data := stocks.GetData("AAPL","2020-10-01","2020-10-03")
 
-	programWindow := view.Window{1400, 900}
+	programWindow := view.Window{1400, 840}
 	plotWindow := view.Window{W: 1400, H: 600}
 
 	bufferDraw, _ := ebiten.NewImage(programWindow.W, programWindow.H, ebiten.FilterDefault)
