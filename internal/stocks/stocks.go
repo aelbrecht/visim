@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -32,13 +33,14 @@ type MarketDay struct {
 }
 
 type Bot struct {
-	Cursor   int
-	Position int
-	Start    int
-	End      int
-	Running  bool
-	Fast     bool
-	Orders   map[int]*Order
+	Cursor    int
+	Position  int
+	Start     int
+	End       int
+	Running   bool
+	Fast      bool
+	Orders    map[int]*Order
+	OrderLock sync.Mutex
 }
 
 type Quote struct {

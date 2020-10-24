@@ -15,5 +15,4 @@ func HandleBot(model *stocks.Model, screen *view.Screen) {
 		cursorPressed = false
 		model.Bot.Cursor = screen.Camera.X + int(float64(screen.Cursor.X)/screen.Camera.ScaleXF)
 	}
-
 }

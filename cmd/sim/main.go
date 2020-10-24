@@ -3,6 +3,7 @@ package main
 import (
 	"image/color"
 	"log"
+	"sync"
 	"visim.muon.one/internal/inputs"
 	"visim.muon.one/internal/layout"
 	"visim.muon.one/internal/plots"
@@ -143,12 +144,13 @@ func main() {
 	model := &stocks.Model{
 		Data: data,
 		Bot: stocks.Bot{
-			Cursor:   0,
-			Position: 60,
-			Start:    60,
-			End:      stocks.MinutesInDay - 60,
-			Running:  false,
-			Orders:   make(map[int]*stocks.Order),
+			Cursor:    0,
+			Position:  60,
+			Start:     60,
+			End:       stocks.MinutesInDay - 60,
+			Running:   false,
+			Orders:    make(map[int]*stocks.Order),
+			OrderLock: sync.Mutex{},
 		},
 	}
 

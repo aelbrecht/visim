@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"github.com/hajimehoshi/ebiten"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strconv"
@@ -17,6 +16,8 @@ func RunBot(m *stocks.Model) {
 	for true {
 		if m.Bot.Running {
 
+			startPos := m.Bot.Position
+
 			if m.Bot.Position >= m.Bot.End {
 				m.Bot.Running = false
 				continue
@@ -28,21 +29,33 @@ func RunBot(m *stocks.Model) {
 
 			dayHistory := m.GetQuoteDay(stocks.GetDay(m.Bot.Position)).Quotes[:stocks.GetMinute(m.Bot.Position)]
 
-			data := ""
+			data := fmt.Sprintf("%d\n", len(dayHistory))
 			for _, quote := range dayHistory {
-				data += fmt.Sprintf("%f,%f,%f,%f,%d\n", quote.Open, quote.High, quote.Low, quote.Close, quote.Volume)
+				data += fmt.Sprintf("%d,%f,%f,%f,%f,%d\n", quote.Time, quote.Open, quote.High, quote.Low, quote.Close, quote.Volume)
 			}
 
-			tmpDir := os.Getenv("TMP_DIR")
-			ioutil.WriteFile(tmpDir+"/quotes.txt", []byte(data), 0644)
+			cmd := exec.Command(os.Getenv("PYTHON_PATH"), os.Getenv("BOT_PATH"))
+			cmd.Stdin = strings.NewReader(data)
 
-			out, err := exec.Command(os.Getenv("PYTHON_PATH"), os.Getenv("BOT_PATH"), tmpDir+"/quotes.txt").Output()
+			out, err := cmd.Output()
 			if err != nil {
 				fmt.Println(err)
 				continue
 			}
 
-			orderRaw := strings.Split(strings.ReplaceAll(string(out), "\n", ""), ",")
+			outLines := strings.Split(string(out), "\n")
+			result := ""
+			for _, line := range outLines {
+				if line == "" {
+					continue
+				} else if line[0] == '#' {
+					fmt.Println(line)
+					continue
+				}
+				result = line
+			}
+
+			orderRaw := strings.Split(result, ",")
 			if len(orderRaw) != 2 {
 				fmt.Println("invalid bot reply")
 				continue
@@ -71,10 +84,16 @@ func RunBot(m *stocks.Model) {
 				Quote:  m.GetQuote(m.Bot.Position),
 			}
 
-			fmt.Printf("%s order at %d for %d\n", orderRaw[0], m.Bot.Position, orderAmount)
+			date := time.Unix(m.GetQuote(m.Bot.Position).Time, 0).In(time.FixedZone("GMT", 0))
+			fmt.Printf("%s order at %s for %d\n", orderRaw[0], date.Format(time.RFC3339), orderAmount)
 
+			if startPos < m.Bot.Position {
+				continue
+			}
+
+			m.Bot.OrderLock.Lock()
 			m.Bot.Orders[m.Bot.Position] = &order
-
+			m.Bot.OrderLock.Unlock()
 			m.Bot.Position += 1
 		} else {
 			time.Sleep(time.Second)
@@ -89,13 +108,19 @@ func plotTrades(g *Game, s *ebiten.Image) {
 
 	for i := left; i < right; i++ {
 
+		g.Model.Bot.OrderLock.Lock()
 		o := g.Model.Bot.Orders[i]
+		g.Model.Bot.OrderLock.Unlock()
 		if o == nil {
 			continue
 		}
 
 		op := ebiten.DrawImageOptions{}
-		op.GeoM.Scale(1, 5)
+		if o.Buy {
+			op.GeoM.Scale(1, -float64(o.Amount/2))
+		} else {
+			op.GeoM.Scale(1, float64(o.Amount/2))
+		}
 		op.GeoM.Translate(float64(i-left), float64(g.Screen.Program.H-100))
 		op.GeoM.Scale(g.Screen.Camera.ScaleXF, 1)
 		if o.Buy {
