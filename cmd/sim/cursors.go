@@ -5,17 +5,17 @@ import (
 	"image/color"
 )
 
-var pixelBotStart *ebiten.Image
-var pixelBotEnd *ebiten.Image
-var pixelBotPosition *ebiten.Image
+var pixelEnter *ebiten.Image
+var pixelExit *ebiten.Image
+var pixelHold *ebiten.Image
 
 func init() {
-	pixelBotStart, _ = ebiten.NewImage(1, 1, ebiten.FilterDefault)
-	pixelBotStart.Fill(color.RGBA{0, 255, 0, 100})
-	pixelBotEnd, _ = ebiten.NewImage(1, 1, ebiten.FilterDefault)
-	pixelBotEnd.Fill(color.RGBA{255, 0, 0, 100})
-	pixelBotPosition, _ = ebiten.NewImage(1, 1, ebiten.FilterDefault)
-	pixelBotPosition.Fill(color.RGBA{255, 255, 0, 100})
+	pixelEnter, _ = ebiten.NewImage(1, 1, ebiten.FilterDefault)
+	pixelEnter.Fill(color.RGBA{0, 255, 0, 100})
+	pixelExit, _ = ebiten.NewImage(1, 1, ebiten.FilterDefault)
+	pixelExit.Fill(color.RGBA{255, 0, 0, 100})
+	pixelHold, _ = ebiten.NewImage(1, 1, ebiten.FilterDefault)
+	pixelHold.Fill(color.RGBA{255, 255, 0, 100})
 }
 
 func drawCursors(g *Game, screen *ebiten.Image) {
@@ -24,19 +24,19 @@ func drawCursors(g *Game, screen *ebiten.Image) {
 	op := ebiten.DrawImageOptions{}
 	op.GeoM.Scale(g.Screen.Camera.ScaleXF, float64(g.Screen.Program.H))
 	op.GeoM.Translate(float64(g.Model.Bot.Start-g.Screen.Camera.X)*g.Screen.Camera.ScaleXF, 0)
-	screen.DrawImage(pixelBotStart, &op)
+	screen.DrawImage(pixelEnter, &op)
 
 	// draw bot position
 	op = ebiten.DrawImageOptions{}
 	op.GeoM.Scale(g.Screen.Camera.ScaleXF, float64(g.Screen.Program.H))
 	op.GeoM.Translate(float64(g.Model.Bot.End-g.Screen.Camera.X)*g.Screen.Camera.ScaleXF, 0)
-	screen.DrawImage(pixelBotEnd, &op)
+	screen.DrawImage(pixelExit, &op)
 
 	// draw bot position
 	op = ebiten.DrawImageOptions{}
 	op.GeoM.Scale(g.Screen.Camera.ScaleXF, float64(g.Screen.Program.H))
 	op.GeoM.Translate(float64(g.Model.Bot.Position-g.Screen.Camera.X)*g.Screen.Camera.ScaleXF, 0)
-	screen.DrawImage(pixelBotPosition, &op)
+	screen.DrawImage(pixelHold, &op)
 
 	// draw horizontal cursor
 	op = ebiten.DrawImageOptions{}

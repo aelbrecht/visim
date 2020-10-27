@@ -112,9 +112,11 @@ func RunBot(m *stocks.Model) {
 			} else if kind == "exit_long" {
 				exitLongPositions(m)
 				exit = true
+				long = true
 			} else if kind == "exit_short" {
 				exitShortPositions(m)
 				exit = true
+				short = true
 			}
 
 			// parse buy limit
@@ -175,8 +177,8 @@ func plotTrades(g *Game, s *ebiten.Image) {
 	left := g.Screen.Camera.X
 	right := left + int(float64(g.Screen.Program.W)/g.Screen.Camera.ScaleXF)
 
+	// plot long/short enter
 	for i := left; i < right; i++ {
-
 		g.Model.Bot.OrderLock.Lock()
 		o := g.Model.Bot.Orders[i]
 		g.Model.Bot.OrderLock.Unlock()
@@ -194,11 +196,31 @@ func plotTrades(g *Game, s *ebiten.Image) {
 		op.GeoM.Translate(float64(i-left), float64(g.Screen.Plot.H)+40+100+2+50+2)
 		op.GeoM.Scale(g.Screen.Camera.ScaleXF, 1)
 		if o.Long {
-			s.DrawImage(pixelBotStart, &op)
+			s.DrawImage(pixelEnter, &op)
 		} else if o.Short {
-			s.DrawImage(pixelBotEnd, &op)
+			s.DrawImage(pixelExit, &op)
 		}
-
 	}
 
+	// plot long/short exits
+	for i := left; i < right; i++ {
+		g.Model.Bot.OrderLock.Lock()
+		o := g.Model.Bot.Orders[i]
+		g.Model.Bot.OrderLock.Unlock()
+		if o == nil || !o.Exit {
+			continue
+		}
+
+		op := ebiten.DrawImageOptions{}
+		op.GeoM.Scale(1, 37)
+		op.GeoM.Translate(float64(i-left), 40+2+float64(g.Screen.Plot.H)+2+100+2+100)
+		op.GeoM.Scale(g.Screen.Camera.ScaleXF, 1)
+		if o.Long {
+			s.DrawImage(pixelExit, &op)
+		} else if o.Short {
+			s.DrawImage(pixelEnter, &op)
+		} else {
+			s.DrawImage(pixelHold, &op)
+		}
+	}
 }

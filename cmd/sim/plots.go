@@ -139,7 +139,7 @@ func plotDay(g *Game, day int) {
 	drawHorizontalLine(t, g)                                 // plot top
 	drawHorizontalLine(float64(g.Screen.Plot.H)+40, g)       // rsi top
 	drawHorizontalLine(float64(g.Screen.Plot.H)+40+100+2, g) // buy/sell top
-	drawHorizontalLineCustom(float64(g.Screen.Plot.H)+40+100+2+50+2, g, pixelBotPosition)
+	drawHorizontalLineCustom(float64(g.Screen.Plot.H)+40+100+2+50+2, g, pixelHold)
 	drawHorizontalLine(float64(g.Screen.Plot.H)+40+100+2+100+2, g)    // indicator 1 top
 	drawHorizontalLine(float64(g.Screen.Plot.H)+40+100+2+100+2+39, g) // indicator 2 top
 	drawHorizontalLine(float64(g.Screen.Program.H)-16-2, g)           // bottom
