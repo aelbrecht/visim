@@ -18,9 +18,14 @@ type Model struct {
 }
 
 type Order struct {
-	Buy    bool
-	Amount int
-	Quote  *Quote
+	Finished   bool
+	Long       bool
+	Short      bool
+	Exit       bool
+	StopLoss   float64
+	TakeProfit float64
+	Amount     int
+	Quote      *Quote
 }
 
 type DailyHistory = []*MarketDay
@@ -33,6 +38,7 @@ type MarketDay struct {
 }
 
 type Bot struct {
+	Message   string
 	Cursor    int
 	Position  int
 	Start     int

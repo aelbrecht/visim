@@ -1,9 +1,11 @@
 package main
 
 import (
+	"github.com/hajimehoshi/ebiten/text"
 	"image/color"
 	"log"
 	"sync"
+	"visim.muon.one/internal/fonts"
 	"visim.muon.one/internal/inputs"
 	"visim.muon.one/internal/layout"
 	"visim.muon.one/internal/plots"
@@ -116,6 +118,16 @@ func (g *Game) Update(screen *ebiten.Image) error {
 	drawHorizontalLabels(g.Screen, g.Model, screen)
 	drawMenu(g.Buttons, g.Screen, screen)
 
+	debugMessage := g.Model.Bot.Message
+	text.Draw(
+		screen,
+		debugMessage,
+		fonts.FaceNormal,
+		g.Screen.Program.W-len(debugMessage)*6-10,
+		26,
+		color.RGBA{255, 255, 255, 255},
+	)
+
 	return nil
 }
 
@@ -132,10 +144,10 @@ func handleFatal(err error) {
 func main() {
 
 	data := stocks.GetDataCSV("./data/msft.csv")
-	// data := stocks.GetData("AAPL","2020-10-01","2020-10-03")
+	//data := stocks.GetData("AAPL","2020-08-01","2020-09-01")
 
 	programWindow := view.Window{W: 1400, H: 840}
-	plotWindow := view.Window{W: 1400, H: 600}
+	plotWindow := view.Window{W: 1400, H: 500}
 
 	bufferDraw, _ := ebiten.NewImage(programWindow.W, programWindow.H, ebiten.FilterDefault)
 	bufferPlot, _ := ebiten.NewImage(programWindow.W, programWindow.H, ebiten.FilterDefault)

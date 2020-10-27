@@ -11,6 +11,22 @@ import (
 	"visim.muon.one/internal/stocks"
 )
 
+func exitStopLosses(m *stocks.Model) {
+
+}
+
+func exitTakeProfits(m *stocks.Model) {
+
+}
+
+func exitShortPositions(m *stocks.Model) {
+
+}
+
+func exitLongPositions(m *stocks.Model) {
+
+}
+
 func RunBot(m *stocks.Model) {
 
 	for true {
@@ -27,22 +43,26 @@ func RunBot(m *stocks.Model) {
 				time.Sleep(time.Second)
 			}
 
-			dayHistory := m.GetQuoteDay(stocks.GetDay(m.Bot.Position)).Quotes[:stocks.GetMinute(m.Bot.Position)]
+			exitStopLosses(m)
+			exitTakeProfits(m)
 
+			// prepare data payload
+			dayHistory := m.GetQuoteDay(stocks.GetDay(m.Bot.Position)).Quotes[:stocks.GetMinute(m.Bot.Position)]
 			data := fmt.Sprintf("%d\n", len(dayHistory))
 			for _, quote := range dayHistory {
 				data += fmt.Sprintf("%d,%f,%f,%f,%f,%d\n", quote.Time, quote.Open, quote.High, quote.Low, quote.Close, quote.Volume)
 			}
 
+			// run bot
 			cmd := exec.Command(os.Getenv("PYTHON_PATH"), os.Getenv("BOT_PATH"))
 			cmd.Stdin = strings.NewReader(data)
-
 			out, err := cmd.Output()
 			if err != nil {
-				fmt.Println(err)
+				m.Bot.Message = err.Error()
 				continue
 			}
 
+			// parse bot request
 			outLines := strings.Split(string(out), "\n")
 			result := ""
 			for _, line := range outLines {
@@ -55,37 +75,86 @@ func RunBot(m *stocks.Model) {
 				result = line
 			}
 
+			// split tuple
 			orderRaw := strings.Split(result, ",")
-			if len(orderRaw) != 2 {
+			if len(orderRaw) != 5 {
+				m.Bot.Message = "invalid tuple size"
 				fmt.Println("invalid bot reply")
 				continue
 			}
 
-			orderAmount, err := strconv.Atoi(orderRaw[1])
+			// parse price
+			orderPrice, err := strconv.ParseFloat(orderRaw[1], 64)
 			if err != nil {
-				fmt.Println("invalid order size")
+				m.Bot.Message = "invalid buy limit"
 				continue
 			}
 
-			if orderRaw[0] != "sell" && orderRaw[0] != "buy" && orderRaw[0] != "hold" {
-				fmt.Println("invalid order type")
+			// parse amount
+			orderAmount, err := strconv.Atoi(orderRaw[2])
+			if err != nil {
+				m.Bot.Message = "invalid order size"
 				continue
-
 			}
 
-			if orderRaw[0] == "hold" {
+			// parse order kind
+			kind := orderRaw[0]
+			long := false
+			short := false
+			exit := false
+			if kind == "hold" {
 				m.Bot.Position += 1
 				continue
+			} else if kind == "long" {
+				long = true
+			} else if kind == "short" {
+				short = true
+			} else if kind == "exit_long" {
+				exitLongPositions(m)
+				exit = true
+			} else if kind == "exit_short" {
+				exitShortPositions(m)
+				exit = true
+			}
+
+			// parse buy limit
+			takeProfitMargin, err := strconv.ParseFloat(orderRaw[3], 64)
+			if err != nil {
+				m.Bot.Message = "invalid buy limit"
+				continue
+			}
+
+			// parse sell limit
+			stopLossMargin, err := strconv.ParseFloat(orderRaw[4], 64)
+			if err != nil {
+				m.Bot.Message = "invalid sell limit"
+				continue
+			}
+
+			q := m.GetQuote(m.Bot.Position)
+
+			takeProfit := 0.0
+			if takeProfitMargin != 0 {
+				takeProfit = (1 + takeProfitMargin) * orderPrice
+			}
+
+			stopLoss := 0.0
+			if stopLossMargin != 0 {
+				stopLoss = (1 - stopLossMargin) * orderPrice
 			}
 
 			order := stocks.Order{
-				Buy:    orderRaw[0] == "buy",
-				Amount: orderAmount,
-				Quote:  m.GetQuote(m.Bot.Position),
+				TakeProfit: takeProfit,
+				StopLoss:   stopLoss,
+				Long:       long,
+				Short:      short,
+				Exit:       exit,
+				Amount:     orderAmount,
+				Quote:      m.GetQuote(m.Bot.Position),
 			}
 
-			date := time.Unix(m.GetQuote(m.Bot.Position).Time, 0).In(time.FixedZone("GMT", 0))
-			fmt.Printf("%s order at %s for %d\n", orderRaw[0], date.Format(time.RFC3339), orderAmount)
+			date := time.Unix(q.Time, 0).In(time.FixedZone("GMT", 0))
+			m.Bot.Message = fmt.Sprintf("%s: %s %d %f\n", date.Format(time.RFC3339), kind, orderAmount, orderPrice)
 
 			if startPos < m.Bot.Position {
 				continue
@@ -111,21 +180,22 @@ func plotTrades(g *Game, s *ebiten.Image) {
 		g.Model.Bot.OrderLock.Lock()
 		o := g.Model.Bot.Orders[i]
 		g.Model.Bot.OrderLock.Unlock()
-		if o == nil {
+		if o == nil || o.Exit {
 			continue
 		}
 
 		op := ebiten.DrawImageOptions{}
-		if o.Buy {
+		if o.Long {
 			op.GeoM.Scale(1, -float64(o.Amount/2))
-		} else {
+		} else if o.Short {
 			op.GeoM.Scale(1, float64(o.Amount/2))
+			op.GeoM.Translate(0, 1)
 		}
-		op.GeoM.Translate(float64(i-left), float64(g.Screen.Program.H-100))
+		op.GeoM.Translate(float64(i-left), float64(g.Screen.Plot.H)+40+100+2+50+2)
 		op.GeoM.Scale(g.Screen.Camera.ScaleXF, 1)
-		if o.Buy {
+		if o.Long {
 			s.DrawImage(pixelBotStart, &op)
-		} else {
+		} else if o.Short {
 			s.DrawImage(pixelBotEnd, &op)
 		}
 

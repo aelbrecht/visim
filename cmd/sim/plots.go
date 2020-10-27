@@ -79,8 +79,10 @@ func plotPrimary(b *DayBuffer, o *inputs.Options, s *view.Screen, day int, plot 
 	// draw plot
 	op := ebiten.DrawImageOptions{}
 	op.GeoM.Scale(1, -1)
-	op.GeoM.Translate(0, float64(s.Program.H))
-	op.GeoM.Translate(0, -300+float64(MenuHeight))
+	op.GeoM.Translate(0, float64(s.Program.H))           // translate flip
+	op.GeoM.Translate(0, -float64(s.Program.H-s.Plot.H)) // translate plot from bottom to top
+	op.GeoM.Translate(0, 40)                             // space for menu
+	//op.GeoM.Translate(0, -300+float64(MenuHeight))
 	op.GeoM.Scale(c.ScaleXF/gs, 1)
 	op.GeoM.Translate(float64(stocks.MinutesInDay*day)*c.ScaleXF, 0)
 	op.GeoM.Translate(-float64(c.X)*c.ScaleXF, 0)
@@ -96,7 +98,9 @@ func plotRSI(b *DayBuffer, o *inputs.Options, s *view.Screen, day int, plot *ebi
 	op := ebiten.DrawImageOptions{}
 	op.GeoM.Scale(float64(c.GridSize), -1)
 	op.GeoM.Translate(0, float64(s.Program.H))
-	op.GeoM.Translate(0, -300+float64(MenuHeight)+102)
+	op.GeoM.Translate(0, -float64(s.Program.H-s.Plot.H)+40)
+	op.GeoM.Translate(0, 100+2)
+	//op.GeoM.Translate(0, -300+float64(MenuHeight)+102)
 	op.GeoM.Scale(c.ScaleXF/float64(c.GridSize), 1)
 	op.GeoM.Translate(float64(stocks.MinutesInDay*day)*c.ScaleXF, 0)
 	op.GeoM.Translate(-float64(c.X)*c.ScaleXF, 0)
@@ -132,10 +136,13 @@ func plotDay(g *Game, day int) {
 
 	// draw plot dividers
 	t := float64(MenuHeight)
-	drawHorizontalLine(t, g)
-	drawHorizontalLine(float64(g.Screen.Plot.H), g)
-	//drawHorizontalLine(t+float64(g.Screen.Plot.H)-2, g)
-	drawHorizontalLine(float64(g.Screen.Program.H)-16-2, g)
+	drawHorizontalLine(t, g)                                 // plot top
+	drawHorizontalLine(float64(g.Screen.Plot.H)+40, g)       // rsi top
+	drawHorizontalLine(float64(g.Screen.Plot.H)+40+100+2, g) // buy/sell top
+	drawHorizontalLineCustom(float64(g.Screen.Plot.H)+40+100+2+50+2, g, pixelBotPosition)
+	drawHorizontalLine(float64(g.Screen.Plot.H)+40+100+2+100+2, g)    // indicator 1 top
+	drawHorizontalLine(float64(g.Screen.Plot.H)+40+100+2+100+2+39, g) // indicator 2 top
+	drawHorizontalLine(float64(g.Screen.Program.H)-16-2, g)           // bottom
 }
 
 // draw date label for horizontal axis
@@ -214,6 +221,14 @@ func drawVerticalLabels(s *view.Screen, plot *ebiten.Image) {
 		)
 		ly += 1
 	}
+}
+
+func drawHorizontalLineCustom(y float64, g *Game, img *ebiten.Image) {
+	w := float64(g.Screen.Program.W)
+	op := ebiten.DrawImageOptions{}
+	op.GeoM.Scale(w, 1)
+	op.GeoM.Translate(0, y)
+	g.Buffers.Plot.DrawImage(img, &op)
 }
 
 func drawHorizontalLine(y float64, g *Game) {

@@ -11,8 +11,8 @@ var cursorPressed = false
 func HandleBot(model *stocks.Model, screen *view.Screen) {
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonRight) {
 		cursorPressed = true
+		model.Bot.Cursor = screen.Camera.X + int(float64(screen.Cursor.X)/screen.Camera.ScaleXF)
 	} else if cursorPressed {
 		cursorPressed = false
-		model.Bot.Cursor = screen.Camera.X + int(float64(screen.Cursor.X)/screen.Camera.ScaleXF)
 	}
 }
