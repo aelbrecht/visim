@@ -53,6 +53,8 @@ func HandleMouseLeft(s *view.Screen, buttons []*layout.Button) {
 
 	if dragging {
 		handlePlotCamera(dx, dy, s)
+	} else {
+		handlePlotCamera(0, 0, s)
 	}
 
 	for _, button := range buttons {

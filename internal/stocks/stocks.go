@@ -46,6 +46,7 @@ type Bot struct {
 	Start     int
 	End       int
 	Running   bool
+	Follow    bool
 	Fast      bool
 	Orders    map[int]*Order
 	OrderLock sync.Mutex

@@ -90,6 +90,11 @@ func (g *Game) Update(screen *ebiten.Image) error {
 	// scale axis to always fit visible data
 	g.Screen.AutoYAxis(g.Model)
 
+	// follow bot
+	if g.Model.Bot.Follow && g.Model.Bot.Running {
+		g.Screen.Camera.XF = float64(g.Model.Bot.Position) - float64(g.Screen.Program.W/2)/g.Screen.Camera.ScaleXF
+	}
+
 	// clear screen and buffers
 	screen.Fill(ColorBackground)
 	g.Buffers.Tooltip.Clear()
@@ -145,7 +150,7 @@ func handleFatal(err error) {
 func main() {
 
 	//data := stocks.GetDataCSV("./data/msft.csv")
-	data := stocks.GetData("AAPL","2020-04-01","2020-05-01")
+	data := stocks.GetData("AAPL", "2020-02-01", "2020-05-01")
 
 	programWindow := view.Window{W: 1400, H: 840}
 	plotWindow := view.Window{W: 1400, H: 500}
@@ -166,15 +171,15 @@ func main() {
 			OrderLock: sync.Mutex{},
 		},
 	}
-
+	screen := &view.Screen{
+		Camera:  &view.Camera{ScaleX: 5, ScaleXF: 5, GridSize: 5, Y: 200},
+		Plot:    plotWindow,
+		Program: programWindow,
+	}
 	game := Game{
-		Buttons: makeMenuButtons(model),
+		Buttons: makeMenuButtons(model, screen),
 		Model:   model,
-		Screen: &view.Screen{
-			Camera:  &view.Camera{ScaleX: 5, ScaleXF: 5, GridSize: 5, Y: 200},
-			Plot:    plotWindow,
-			Program: programWindow,
-		},
+		Screen:  screen,
 		Buffers: Buffers{
 			Draw:    bufferDraw,
 			Plot:    bufferPlot,
