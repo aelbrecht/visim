@@ -25,7 +25,9 @@ type Order struct {
 	StopLoss   float64
 	TakeProfit float64
 	Amount     int
-	Quote      *Quote
+	Leverage   int
+	EnterQuote *Quote
+	ExitQuote  *Quote
 }
 
 type DailyHistory = []*MarketDay

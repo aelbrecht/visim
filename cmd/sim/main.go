@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/hajimehoshi/ebiten/text"
 	"image/color"
 	"log"
@@ -119,14 +120,14 @@ func (g *Game) Update(screen *ebiten.Image) error {
 	drawMenu(g.Buttons, g.Screen, screen)
 
 	debugMessage := g.Model.Bot.Message
-	text.Draw(
-		screen,
-		debugMessage,
-		fonts.FaceNormal,
-		g.Screen.Program.W-len(debugMessage)*6-10,
-		26,
-		color.RGBA{255, 255, 255, 255},
-	)
+	portfolio := BotPortfolio(g.Model, quoteIndex)
+	msgPortfolio := fmt.Sprintf(
+		"stocks: %0.2f | settled: %0.2f | investment: %0.2f | long: %d | short: %d | P/L: %0.2f",
+		portfolio.Stocks, portfolio.Settled, portfolio.Invested, portfolio.Long, portfolio.Short, portfolio.Profit)
+	x := g.Screen.Program.W - len(msgPortfolio)*6 - 20
+	text.Draw(screen, msgPortfolio, fonts.FaceNormal, x, 26, color.White)
+	x = x - len(debugMessage)*6 - 20
+	text.Draw(screen, debugMessage, fonts.FaceNormal, x, 26, ColorGray)
 
 	return nil
 }
@@ -189,6 +190,7 @@ func main() {
 
 	go RunBot(model)
 
+	ebiten.SetRunnableOnUnfocused(true)
 	ebiten.SetWindowSize(game.Screen.Program.W, game.Screen.Program.H)
 	ebiten.SetWindowTitle("Muon Market View")
 	if err := ebiten.RunGame(&game); err != nil {

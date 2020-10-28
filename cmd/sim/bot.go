@@ -11,20 +11,100 @@ import (
 	"visim.muon.one/internal/stocks"
 )
 
-func exitStopLosses(m *stocks.Model) {
-
+type Portfolio struct {
+	Stocks   float64
+	Settled  float64
+	Invested float64
+	Profit   float64
+	Long     int
+	Short    int
 }
 
-func exitTakeProfits(m *stocks.Model) {
+func BotPortfolio(m *stocks.Model, x int) Portfolio {
+	qq := m.GetQuote(x)
+	if qq == nil {
+		qq = m.GetQuote(m.Bot.Position)
+	}
+	totalSettled := 0.0
+	totalStocks := 0.0
+	totalInvested := 0.0
+	longs := 0
+	shorts := 0
+	m.Bot.OrderLock.Lock()
+	for _, order := range m.Bot.Orders {
+		if order.Exit {
+			continue
+		}
+		if order.EnterQuote.Time > qq.Time {
+			continue
+		}
+		q := qq
+		if order.Finished && order.ExitQuote.Time <= qq.Time {
+			q = order.ExitQuote
+		} else {
+			if order.Long {
+				longs++
+			}
+			if order.Short {
+				shorts++
+			}
+		}
+		diff := q.Close - order.EnterQuote.Close
+		totalStocks += diff * float64(order.Amount*order.Leverage)
+		totalInvested += float64(order.Amount)
+	}
+	m.Bot.OrderLock.Unlock()
+	profit := totalStocks + totalSettled
 
+	return Portfolio{
+		Stocks:   totalStocks,
+		Settled:  totalSettled,
+		Long:     longs,
+		Short:    shorts,
+		Invested: totalInvested,
+		Profit:   profit,
+	}
+}
+
+func exitStopLossesTakeProfits(m *stocks.Model) {
+	qq := m.GetQuote(m.Bot.Position)
+	m.Bot.OrderLock.Lock()
+	for _, order := range m.Bot.Orders {
+		if order.Finished || order.Exit {
+			continue
+		}
+		if (order.StopLoss > 0 && qq.Close < order.StopLoss) || (order.TakeProfit > 0 && qq.Close > order.TakeProfit) {
+			order.ExitQuote = qq
+			order.Finished = true
+		}
+	}
+	m.Bot.OrderLock.Unlock()
 }
 
 func exitShortPositions(m *stocks.Model) {
-
+	qq := m.GetQuote(m.Bot.Position)
+	m.Bot.OrderLock.Lock()
+	for _, order := range m.Bot.Orders {
+		if order.Finished || order.Exit || !order.Short {
+			continue
+		}
+		order.Finished = true
+		order.ExitQuote = qq
+	}
+	m.Bot.OrderLock.Unlock()
 }
 
 func exitLongPositions(m *stocks.Model) {
-
+	qq := m.GetQuote(m.Bot.Position)
+	m.Bot.OrderLock.Lock()
+	for _, order := range m.Bot.Orders {
+		if order.Finished || order.Exit || !order.Long {
+			continue
+		}
+		order.Finished = true
+		order.ExitQuote = qq
+	}
+	m.Bot.OrderLock.Unlock()
 }
 
 func RunBot(m *stocks.Model) {
@@ -43,8 +123,7 @@ func RunBot(m *stocks.Model) {
 				time.Sleep(time.Second)
 			}
 
-			exitStopLosses(m)
-			exitTakeProfits(m)
+			exitStopLossesTakeProfits(m)
 
 			// prepare data payload
 			dayHistory := m.GetQuoteDay(stocks.GetDay(m.Bot.Position)).Quotes[:stocks.GetMinute(m.Bot.Position)]
@@ -77,7 +156,7 @@ func RunBot(m *stocks.Model) {
 
 			// split tuple
 			orderRaw := strings.Split(result, ",")
-			if len(orderRaw) != 5 {
+			if len(orderRaw) != 6 {
 				m.Bot.Message = "invalid tuple size"
 				fmt.Println("invalid bot reply")
 				continue
@@ -94,6 +173,13 @@ func RunBot(m *stocks.Model) {
 			orderAmount, err := strconv.Atoi(orderRaw[2])
 			if err != nil {
 				m.Bot.Message = "invalid order size"
+				continue
+			}
+
+			// parse amount
+			orderLeverage, err := strconv.Atoi(orderRaw[3])
+			if err != nil {
+				m.Bot.Message = "invalid order leverage"
 				continue
 			}
 
@@ -120,14 +206,14 @@ func RunBot(m *stocks.Model) {
 			}
 
 			// parse buy limit
-			takeProfitMargin, err := strconv.ParseFloat(orderRaw[3], 64)
+			takeProfitMargin, err := strconv.ParseFloat(orderRaw[4], 64)
 			if err != nil {
 				m.Bot.Message = "invalid buy limit"
 				continue
 			}
 
 			// parse sell limit
-			stopLossMargin, err := strconv.ParseFloat(orderRaw[4], 64)
+			stopLossMargin, err := strconv.ParseFloat(orderRaw[5], 64)
 			if err != nil {
 				m.Bot.Message = "invalid sell limit"
 				continue
@@ -137,12 +223,12 @@ func RunBot(m *stocks.Model) {
 
 			takeProfit := 0.0
 			if takeProfitMargin != 0 {
-				takeProfit = (1 + takeProfitMargin) * orderPrice
+				takeProfit = (1 + takeProfitMargin/float64(orderLeverage)) * orderPrice
 			}
 
 			stopLoss := 0.0
 			if stopLossMargin != 0 {
-				stopLoss = (1 - stopLossMargin) * orderPrice
+				stopLoss = (1 - stopLossMargin/float64(orderLeverage)) * orderPrice
 			}
 
 			order := stocks.Order{
@@ -151,12 +237,13 @@ func RunBot(m *stocks.Model) {
 				Long:       long,
 				Short:      short,
 				Exit:       exit,
+				Leverage:   orderLeverage,
 				Amount:     orderAmount,
-				Quote:      m.GetQuote(m.Bot.Position),
+				EnterQuote: m.GetQuote(m.Bot.Position),
 			}
 
 			date := time.Unix(q.Time, 0).In(time.FixedZone("GMT", 0))
-			m.Bot.Message = fmt.Sprintf("%s: %s %d %f\n", date.Format(time.RFC3339), kind, orderAmount, orderPrice)
+			m.Bot.Message = fmt.Sprintf("%s: %s %d %0.2f\n", date.Format(time.RFC3339), kind, orderAmount, orderPrice)
 
 			if startPos < m.Bot.Position {
 				continue
@@ -199,6 +286,21 @@ func plotTrades(g *Game, s *ebiten.Image) {
 			s.DrawImage(pixelEnter, &op)
 		} else if o.Short {
 			s.DrawImage(pixelExit, &op)
+		}
+
+		op = ebiten.DrawImageOptions{}
+		if o.Long {
+			op.GeoM.Scale(1, -float64(o.Leverage/2))
+		} else if o.Short {
+			op.GeoM.Scale(1, float64(o.Leverage/2))
+			op.GeoM.Translate(0, 1)
+		}
+		op.GeoM.Translate(float64(i-left), float64(g.Screen.Plot.H)+40+100+2+50+2)
+		op.GeoM.Scale(g.Screen.Camera.ScaleXF, 1)
+		if o.Long {
+			s.DrawImage(pixelHold, &op)
+		} else if o.Short {
+			s.DrawImage(pixelHold, &op)
 		}
 	}
 
