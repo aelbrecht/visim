@@ -135,24 +135,32 @@ func formatData(rawText string) DailyHistory {
 		quoteTime := time.Unix(timestamp, 0)
 		stu := startTime.Unix()
 		qtu := quoteTime.Unix()
+		empty := false
 		for stu != qtu {
 			if qtu < stu {
 				break
 			} else {
 				j := len(rows) - 1
-				rows = append(rows, Quote{
-					Time:   startTime.Unix(),
-					Open:   rows[j].Close,
-					High:   rows[j].Close,
-					Low:    rows[j].Close,
-					Close:  rows[j].Close,
-					Volume: 0,
-				})
+				if j < 0 {
+					empty = true
+				} else {
+					rows = append(rows, Quote{
+						Time:   startTime.Unix(),
+						Open:   rows[j].Close,
+						High:   rows[j].Close,
+						Low:    rows[j].Close,
+						Close:  rows[j].Close,
+						Volume: 0,
+					})
+				}
 				startTime = startTime.Add(time.Minute)
 			}
 			stu = startTime.Unix()
 		}
 		if qtu < stu {
+			continue
+		}
+		if empty {
 			continue
 		}
 
