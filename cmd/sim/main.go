@@ -120,7 +120,7 @@ func (g *Game) Update(screen *ebiten.Image) error {
 	drawMenu(g.Buttons, g.Screen, screen)
 
 	debugMessage := g.Model.Bot.Message
-	portfolio := BotPortfolio(g.Model, quoteIndex)
+	portfolio := BotPortfolio(g.Model, g.Model.Bot.Cursor)
 	msgPortfolio := fmt.Sprintf(
 		"stocks: %0.2f | settled: %0.2f | investment: %0.2f | long: %d | short: %d | P/L: %0.2f",
 		portfolio.Stocks, portfolio.Settled, portfolio.Invested, portfolio.Long, portfolio.Short, portfolio.Profit)
@@ -158,9 +158,9 @@ func main() {
 		Data: data,
 		Bot: stocks.Bot{
 			Cursor:    0,
-			Position:  60,
-			Start:     60,
-			End:       stocks.MinutesInDay - 60,
+			Position:  0,
+			Start:     0,
+			End:       stocks.MinutesInDay,
 			Running:   false,
 			Orders:    make(map[int]*stocks.Order),
 			OrderLock: sync.Mutex{},

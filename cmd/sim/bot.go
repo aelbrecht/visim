@@ -50,7 +50,12 @@ func BotPortfolio(m *stocks.Model, x int) Portfolio {
 			}
 		}
 		diff := q.Close - order.EnterQuote.Close
-		totalStocks += diff * float64(order.Amount*order.Leverage)
+		a := diff * float64(order.Amount*order.Leverage)
+		if order.Finished && order.ExitQuote.Time <= qq.Time {
+			totalSettled += a
+		} else {
+			totalStocks += a
+		}
 		totalInvested += float64(order.Amount)
 	}
 	m.Bot.OrderLock.Unlock()
