@@ -149,8 +149,8 @@ func handleFatal(err error) {
 
 func main() {
 
-	//data := stocks.GetDataCSV("./data/msft.csv")
-	data := stocks.GetData("AAPL", "2020-02-01", "2020-05-01")
+	data := stocks.GetDataCSV("./data/msft.csv")
+	//data := stocks.GetData("AAPL", "2020-02-01", "2020-05-01")
 
 	programWindow := view.Window{W: 1400, H: 840}
 	plotWindow := view.Window{W: 1400, H: 500}
